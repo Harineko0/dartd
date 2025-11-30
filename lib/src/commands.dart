@@ -31,8 +31,8 @@ Future<void> runAnalyzeCommand(String rootPath) async {
     }
   }
 
-  final deletableFiles =
-  computeDeletableNonModuleFiles(analysis).toList()..sort();
+  final deletableFiles = computeDeletableNonModuleFiles(analysis).toList()
+    ..sort();
 
   if (deletableFiles.isEmpty) {
     print('No files without used module or non-module definitions.');
@@ -81,8 +81,8 @@ Future<void> runFixCommand(String rootPath) async {
   }
 
   // Delete files with no used module/non-module definitions.
-  final deletableFiles =
-  computeDeletableNonModuleFiles(analysis).toList()..sort();
+  final deletableFiles = computeDeletableNonModuleFiles(analysis).toList()
+    ..sort();
 
   if (deletableFiles.isEmpty) {
     print('No files without module/non-module definitions to delete.');

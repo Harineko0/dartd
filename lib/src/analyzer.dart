@@ -205,7 +205,9 @@ class ProjectAnalyzer {
         isProvider: false,
         isRiverpod: true,
       );
-      groupsByBaseName.putIfAbsent(name, () => <ModuleDefinition>[]).add(module);
+      groupsByBaseName
+          .putIfAbsent(name, () => <ModuleDefinition>[])
+          .add(module);
     } else {
       nonModuleNames.add(name);
     }
@@ -300,9 +302,9 @@ class ProjectAnalyzer {
 /// Because we collect used names only from non-generated files,
 /// references only inside *.g.dart / *.freezed.dart DO NOT mark usage.
 List<ModuleGroup> computeUnusedGroups(
-    Map<String, ModuleGroup> groupsByBaseName,
-    Set<String> usedNamesFromUserCode,
-    ) {
+  Map<String, ModuleGroup> groupsByBaseName,
+  Set<String> usedNamesFromUserCode,
+) {
   final unused = <ModuleGroup>[];
 
   for (final group in groupsByBaseName.values) {
@@ -361,8 +363,7 @@ Set<String> computeDeletableNonModuleFiles(ProjectAnalysis analysis) {
 
     // If any non-module declaration is used anywhere (including generated
     // files), this file should not be deleted.
-    final isUsed =
-    declared.any(analysis.usedNamesFromAllFiles.contains);
+    final isUsed = declared.any(analysis.usedNamesFromAllFiles.contains);
 
     if (!isUsed) {
       deletable.add(filePath);

@@ -23,9 +23,7 @@ class ModuleDefinition {
 
   @override
   String toString() {
-    final type = isProvider
-        ? 'provider'
-        : (isRiverpod ? 'riverpod' : 'module');
+    final type = isProvider ? 'provider' : (isRiverpod ? 'riverpod' : 'module');
     return '$type "$name" in $filePath';
   }
 }

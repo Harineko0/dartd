@@ -3,9 +3,8 @@ library dartd;
 export 'src/models.dart';
 export 'src/analyzer.dart'
     show
-    analyzeProject,
-    ProjectAnalyzer,
-    ProjectAnalysis,
-    computeUnusedGroups,
-    computeDeletableNonModuleFiles,
-    applyFixes;
+        analyzeProject,
+        ProjectAnalyzer,
+        computeUnusedGroups,
+        computeDeletableNonModuleFiles,
+        applyFixes;

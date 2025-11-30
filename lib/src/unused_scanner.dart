@@ -321,9 +321,10 @@ class UnusedScanner {
       return remaining;
     }
     if (uri.scheme.isEmpty) {
-      final resolved = Uri.file(importerAbs).resolve(target).toFilePath();
-      if (resolved.startsWith(libPrefix)) {
-        return _relativeLibPath(resolved, libPrefix);
+      final importerUri = Uri.file(importerAbs);
+      final resolvedPath = importerUri.resolveUri(uri).toFilePath();
+      if (resolvedPath.startsWith(libPrefix)) {
+        return _relativeLibPath(resolvedPath, libPrefix);
       }
     }
     return null;

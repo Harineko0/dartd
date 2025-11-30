@@ -1,10 +1,17 @@
 name: dartd
 description: CLI to analyze and remove unused Dart classes or modules.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/Harineko0/dartd
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
-dependencies: {}
+dependencies:
+  analyzer: ^6.4.1
+  args: ^2.4.2
+  path: ^1.9.0
+  glob: ^2.1.2
+
+executables:
+  dartd: dartd
 
 dev_dependencies: {}

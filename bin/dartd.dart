@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';
@@ -52,9 +53,7 @@ class ModuleDefinition {
 
   @override
   String toString() {
-    final type = isProvider
-        ? 'provider'
-        : (isRiverpod ? 'riverpod' : 'module');
+    final type = isProvider ? 'provider' : (isRiverpod ? 'riverpod' : 'module');
     return '$type "$name" in $filePath';
   }
 }
@@ -232,8 +231,8 @@ Future<void> _runAnalyze(String rootPath) async {
     }
   }
 
-  final deletableFiles =
-  _computeDeletableNonModuleFiles(analysis).toList()..sort();
+  final deletableFiles = _computeDeletableNonModuleFiles(analysis).toList()
+    ..sort();
 
   if (deletableFiles.isEmpty) {
     print('No files without used module or non-module definitions.');
@@ -280,8 +279,8 @@ Future<void> _runFix(String rootPath) async {
   }
 
   // Delete files with no used module/non-module definitions.
-  final deletableFiles =
-  _computeDeletableNonModuleFiles(analysis).toList()..sort();
+  final deletableFiles = _computeDeletableNonModuleFiles(analysis).toList()
+    ..sort();
 
   if (deletableFiles.isEmpty) {
     print('No files without module/non-module definitions to delete.');
@@ -498,7 +497,9 @@ class ProjectAnalyzer {
         isProvider: false,
         isRiverpod: true,
       );
-      groupsByBaseName.putIfAbsent(name, () => <ModuleDefinition>[]).add(module);
+      groupsByBaseName
+          .putIfAbsent(name, () => <ModuleDefinition>[])
+          .add(module);
     } else {
       nonModuleNames.add(name);
     }
@@ -661,9 +662,9 @@ bool _isGeneratedFile(String filePath) {
 /// Because we collect used names only from non-generated files,
 /// references only inside *.g.dart / *.freezed.dart DO NOT mark usage.
 List<ModuleGroup> _computeUnusedGroups(
-    Map<String, ModuleGroup> groupsByBaseName,
-    Set<String> usedNamesFromUserCode,
-    ) {
+  Map<String, ModuleGroup> groupsByBaseName,
+  Set<String> usedNamesFromUserCode,
+) {
   final unused = <ModuleGroup>[];
 
   for (final group in groupsByBaseName.values) {
@@ -722,8 +723,7 @@ Set<String> _computeDeletableNonModuleFiles(ProjectAnalysis analysis) {
 
     // If any non-module declaration is used anywhere (including generated
     // files), this file should not be deleted.
-    final isUsed =
-    declared.any(analysis.usedNamesFromAllFiles.contains);
+    final isUsed = declared.any(analysis.usedNamesFromAllFiles.contains);
 
     if (!isUsed) {
       deletable.add(filePath);

@@ -3,12 +3,14 @@
     <h1>dartd</h1>
 </div>
 
-# dartd
+<div align="center">
+<img src="https://img.shields.io/pub/v/dartd?label=pub&logo=dart&logoColor=white" alt="Pub">
+<img src="https://github.com/Harineko0/dartd/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
+<img src="https://img.shields.io/badge/dart-%E2%89%A53.0-blue" alt="Dart SDK">
+<img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT">
+</div>
 
-[![Pub](https://img.shields.io/pub/v/dartd?label=pub&logo=dart&logoColor=white)](https://pub.dev/packages/dartd)
-[![CI](https://github.com/Harineko0/dartd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Harineko0/dartd/actions/workflows/ci.yml)
-![Dart SDK](https://img.shields.io/badge/dart-%E2%89%A53.0-blue)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+# dartd
 
 Dead-code sweeper for Dart and Flutter projects. Scan for unused modules (files, classes, globals, generated assets, and more), report them, and prune safely—no edits to generated files.
 

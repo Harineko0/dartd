@@ -1,36 +1,35 @@
 # dartd
 
-Dead-code sweeper for Dart and Flutter projects. Scan for unused modules (files, classes, globals, generated assets, and more), report them, and optionally remove the cruft without touching generated files.
+[![Pub](https://img.shields.io/pub/v/dartd?label=pub&logo=dart&logoColor=white)](https://pub.dev/packages/dartd)
+[![CI](https://github.com/Harineko0/dartd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Harineko0/dartd/actions/workflows/ci.yml)
+![Dart SDK](https://img.shields.io/badge/dart-%E2%89%A53.0-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Installation
-
-```bash
-dart pub global activate dartd
-```
+Dead-code sweeper for Dart and Flutter projects. Scan for unused modules (files, classes, globals, generated assets, and more), report them, and prune safely—no edits to generated files.
 
 ## Usage
 
-- `dartd analyze` — scan `lib/` and report unused module groups and top-level declarations.
-- `dartd analyze --root packages/my_feature/lib` — target a specific package or feature directory.
-- `dartd fix` — remove unused modules, unused class methods/getters/setters/fields, and delete empty Dart files under `lib/`.
-- `dartd fix --root packages/my_feature/lib` — apply fixes to a different root.
-- `dartd fix --remove method` — narrow removals (options: file, class, function, var, method, member; default: all).
+- `dartd analyze --root <path> [--json]` — scan for unused modules and declarations (defaults to the current directory).
+- `dartd fix --root <path> [--dry-run]` — remove unused modules, class members (methods/getters/setters/fields), and delete empty Dart files under `lib/` (dry-run to preview).
+- `dartd fix --remove method` — narrow removals (`file`, `class`, `function`, `var`, `method`, `member`; default: `all`).
+- `dartd analyze --root packages/feature/lib` — target a specific package or feature folder.
+- `dartd fix --root packages/feature/lib` — apply fixes to a different root.
 
-Typical workflow:
+Quick flow:
 
 ```bash
 dartd analyze                  # review what can go
 dartd fix                      # prune unused code safely
-dartd analyze --root .         # optional sanity pass across the whole repo
-dart run build_runner build -d # Regenerate assets as dartd is read-only toward generated files
+dartd analyze --root . --json  # optional JSON pass for tooling/CI
+dart run build_runner build -d # regenerate assets; generated files stay untouched
 ```
 
-## Highlights
+## Why dartd
 
-- Module-aware grouping keeps related symbols together so one reference preserves the whole group.
-- Analyzer and fixer understand files, classes (including unused methods/accessors/fields), enums, extensions, typedefs, globals, and generated assets.
-- Fast, CLI-first experience that works across Dart and Flutter codebases with no framework assumptions.
-- Read-only stance toward generated files; they feed usage info but are never rewritten.
+- Module-aware grouping keeps related symbols together so one reference preserves the whole unit.
+- Understands files, classes (and unused members), enums, extensions, typedefs, globals, and generated assets.
+- Framework-agnostic analysis that works across Dart and Flutter codebases.
+- Fast, CLI-first ergonomics with JSON output for automation.
 
 ## What counts as usage
 
@@ -44,13 +43,18 @@ dart run build_runner build -d # Regenerate assets as dartd is read-only toward 
 
 - Generated files (`*.g.dart`, `*.freezed.dart`, `*.gen.dart`, `*.gr.dart`) are never modified or deleted.
 - Files are deleted only when they contain no used modules and no used top-level declarations.
-- Designed for module-agnostic projects; framework-specific patterns are treated as regular Dart.
+- Constructor params/initializers tied solely to removed fields are pruned alongside those fields.
 
-## Notes and limitations
+## Limitations
 
-- Heuristic detection: reflection, string lookups, or dynamic calls may appear unused.
-- Constructor parameters/initializers tied only to unused fields are removed alongside those fields; mixed constructors are edited conservatively.
-- Always review `dartd analyze` output before committing fixes.
+- Heuristic detection: reflection, string lookups, and dynamic calls may appear unused.
+- Mixed constructors are edited conservatively; review `dartd analyze` output before committing fixes.
+
+## Install
+
+```bash
+dart pub global activate dartd
+```
 
 ## Development
 
@@ -58,11 +62,6 @@ dart run build_runner build -d # Regenerate assets as dartd is read-only toward 
 dart pub get
 dart format .
 dart analyze .
-```
-
-Run from source:
-
-```bash
 dart run bin/dartd.dart analyze --root lib
 dart run bin/dartd.dart fix --root lib
 ```

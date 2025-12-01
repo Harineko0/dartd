@@ -93,8 +93,11 @@ class ProjectAnalyzer {
     required Map<String, Set<String>> nonModuleDeclarationsByFile,
     required List<ClassMemberDefinition> classMembers,
   }) async {
-    final unit = await _parseCompilationUnit(filePath);
-    if (unit == null) return;
+    final parsed = await _parseCompilationUnit(filePath);
+    if (parsed == null) return;
+
+    final unit = parsed.unit;
+    final fileContent = parsed.content;
 
     final isGenerated = isGeneratedFile(filePath);
 
@@ -110,6 +113,7 @@ class ProjectAnalyzer {
     final nonModuleNames = _collectDeclarationsAndModules(
       unit: unit,
       filePath: filePath,
+      fileContent: fileContent,
       groupsByBaseName: groupsByBaseName,
       filesWithModules: filesWithModules,
       classMembers: classMembers,
@@ -120,7 +124,7 @@ class ProjectAnalyzer {
     }
   }
 
-  Future<CompilationUnit?> _parseCompilationUnit(String filePath) async {
+  Future<_ParsedUnit?> _parseCompilationUnit(String filePath) async {
     final file = File(filePath);
     if (!file.existsSync()) return null;
 
@@ -130,7 +134,7 @@ class ProjectAnalyzer {
       path: filePath,
       throwIfDiagnostics: false,
     );
-    return parseResult.unit;
+    return _ParsedUnit(parseResult.unit, content);
   }
 
   void _collectUsedNames(CompilationUnit unit, Set<String> target) {
@@ -141,6 +145,7 @@ class ProjectAnalyzer {
   Set<String> _collectDeclarationsAndModules({
     required CompilationUnit unit,
     required String filePath,
+    required String fileContent,
     required Map<String, List<ModuleDefinition>> groupsByBaseName,
     required Set<String> filesWithModules,
     required List<ClassMemberDefinition> classMembers,
@@ -169,6 +174,7 @@ class ProjectAnalyzer {
         _handleClassDeclaration(
           decl: decl,
           filePath: filePath,
+          fileContent: fileContent,
           groupsByBaseName: groupsByBaseName,
           nonModuleNames: nonModuleNames,
           classMembers: classMembers,
@@ -255,6 +261,7 @@ class ProjectAnalyzer {
   void _handleClassDeclaration({
     required ClassDeclaration decl,
     required String filePath,
+    required String fileContent,
     required Map<String, List<ModuleDefinition>> groupsByBaseName,
     required Set<String> nonModuleNames,
     required List<ClassMemberDefinition> classMembers,
@@ -281,6 +288,7 @@ class ProjectAnalyzer {
       _collectClassMembers(
         decl: decl,
         filePath: filePath,
+        fileContent: fileContent,
         classMembers: classMembers,
       );
     }
@@ -310,10 +318,9 @@ class ProjectAnalyzer {
   void _collectClassMembers({
     required ClassDeclaration decl,
     required String filePath,
+    required String fileContent,
     required List<ClassMemberDefinition> classMembers,
   }) {
-    final constructorFieldUsages = _collectConstructorFieldUsages(decl);
-
     for (final member in decl.members) {
       if (member is MethodDeclaration) {
         final name = member.name.lexeme;
@@ -334,14 +341,11 @@ class ProjectAnalyzer {
           ),
         );
       } else if (member is FieldDeclaration) {
-        // Skip fields tied to constructors; removing them requires
-        // constructor/signature updates.
         if (member.fields.variables.length != 1) continue;
         if (_hasOverrideAnnotation(member.metadata)) continue;
 
         final variable = member.fields.variables.single;
         final name = variable.name.lexeme;
-        if (constructorFieldUsages.contains(name)) continue;
 
         classMembers.add(
           ClassMemberDefinition(
@@ -352,6 +356,7 @@ class ProjectAnalyzer {
             end: member.end,
             kind: ClassMemberKind.field,
             isStatic: member.isStatic,
+            extraRanges: _constructorRemovalsForField(decl, fileContent, name),
           ),
         );
       }
@@ -415,27 +420,163 @@ ClassMemberKind _methodKind(MethodDeclaration member) {
   return ClassMemberKind.method;
 }
 
-Set<String> _collectConstructorFieldUsages(ClassDeclaration decl) {
-  final names = <String>{};
+List<OffsetRange> _constructorRemovalsForField(
+  ClassDeclaration decl,
+  String fileContent,
+  String fieldName,
+) {
+  final removals = <OffsetRange>[];
 
   for (final member in decl.members) {
     if (member is! ConstructorDeclaration) continue;
 
+    final paramsToRemove = <OffsetRange>[];
+    var paramsMatchOnlyField = true;
+
     for (final param in member.parameters.parameters) {
-      if (param is FieldFormalParameter) {
-        final identifier = param.name.lexeme;
-        names.add(identifier);
+      final paramName = _fieldFormalName(param);
+      if (paramName == fieldName) {
+        paramsToRemove.add(_expandCommaSeparatedRange(
+          param.offset,
+          param.end,
+          fileContent,
+        ));
+      } else {
+        paramsMatchOnlyField = false;
       }
     }
 
+    final initializerRanges = <OffsetRange>[];
+    var initializersMatchOnlyField = true;
     for (final initializer in member.initializers) {
-      if (initializer is ConstructorFieldInitializer) {
-        names.add(initializer.fieldName.name);
+      if (initializer is ConstructorFieldInitializer &&
+          initializer.fieldName.name == fieldName) {
+        initializerRanges.add(_expandCommaSeparatedRange(
+          initializer.offset,
+          initializer.end,
+          fileContent,
+        ));
+      } else {
+        initializersMatchOnlyField = false;
       }
+    }
+
+    final removesAllParams = paramsToRemove.isNotEmpty &&
+        paramsToRemove.length == member.parameters.parameters.length;
+    final removesAllInitializers = initializerRanges.isNotEmpty &&
+        initializerRanges.length == member.initializers.length;
+    final bodyIsEmpty = member.body is EmptyFunctionBody;
+
+    if (removesAllParams &&
+        (member.initializers.isEmpty || removesAllInitializers) &&
+        bodyIsEmpty &&
+        paramsMatchOnlyField &&
+        initializersMatchOnlyField) {
+      removals.add(OffsetRange(member.offset, member.end));
+      continue;
+    }
+
+    if (paramsToRemove.isNotEmpty) {
+      removals.addAll(paramsToRemove);
+    }
+
+    if (initializerRanges.isNotEmpty) {
+      removals.addAll(_attachInitializerColon(
+        constructor: member,
+        ranges: initializerRanges,
+        fileContent: fileContent,
+        removesAllInitializers: removesAllInitializers,
+      ));
     }
   }
 
-  return names;
+  return removals;
+}
+
+String? _fieldFormalName(FormalParameter param) {
+  if (param is FieldFormalParameter) {
+    return param.name.lexeme;
+  } else if (param is DefaultFormalParameter &&
+      param.parameter is FieldFormalParameter) {
+    return (param.parameter as FieldFormalParameter).name.lexeme;
+  }
+  return null;
+}
+
+List<OffsetRange> _attachInitializerColon({
+  required ConstructorDeclaration constructor,
+  required List<OffsetRange> ranges,
+  required String fileContent,
+  required bool removesAllInitializers,
+}) {
+  if (!removesAllInitializers || ranges.isEmpty) return ranges;
+
+  final colonIndex = _findInitializerColonIndex(constructor, fileContent);
+  if (colonIndex == null) return ranges;
+
+  var newStart = colonIndex;
+  while (newStart > 0 && _isWhitespace(fileContent.codeUnitAt(newStart - 1))) {
+    newStart--;
+  }
+
+  final adjustedFirst = OffsetRange(newStart, ranges.first.end);
+
+  return [adjustedFirst, ...ranges.skip(1)];
+}
+
+int? _findInitializerColonIndex(
+  ConstructorDeclaration constructor,
+  String fileContent,
+) {
+  if (constructor.initializers.isEmpty) return null;
+  final searchStart = constructor.parameters.end;
+  final firstInitializerOffset = constructor.initializers.first.offset;
+  final colonIndex = fileContent.indexOf(':', searchStart);
+  if (colonIndex == -1) return null;
+  if (colonIndex > firstInitializerOffset) return null;
+  return colonIndex;
+}
+
+OffsetRange _expandCommaSeparatedRange(
+  int start,
+  int end,
+  String content,
+) {
+  var newStart = start;
+  var newEnd = end;
+
+  // Consume trailing whitespace and comma.
+  var idx = newEnd;
+  while (idx < content.length && _isWhitespace(content.codeUnitAt(idx))) {
+    idx++;
+  }
+  if (idx < content.length && content[idx] == ',') {
+    idx++;
+    while (idx < content.length && _isWhitespace(content.codeUnitAt(idx))) {
+      idx++;
+    }
+    newEnd = idx;
+    return OffsetRange(newStart, newEnd);
+  }
+
+  // Otherwise, consume leading comma and whitespace.
+  idx = newStart - 1;
+  while (idx >= 0 && _isWhitespace(content.codeUnitAt(idx))) {
+    idx--;
+  }
+  if (idx >= 0 && content[idx] == ',') {
+    while (idx >= 1 && _isWhitespace(content.codeUnitAt(idx - 1))) {
+      idx--;
+    }
+    newStart = idx;
+  }
+
+  return OffsetRange(newStart, newEnd);
+}
+
+bool _isWhitespace(int charCode) {
+  const whitespaceCodes = [0x20, 0x09, 0x0a, 0x0d];
+  return whitespaceCodes.contains(charCode);
 }
 
 /// Compute deletable files that do not contain any module definitions.
@@ -520,8 +661,13 @@ void applyCombinedFixes({
     final removals = <_TextRemoval>[
       ...?modulesToDeleteByFile[filePath]
           ?.map((module) => _TextRemoval(module.start, module.end)),
-      ...?classMembersToDeleteByFile[filePath]
-          ?.map((member) => _TextRemoval(member.start, member.end)),
+      ...?classMembersToDeleteByFile[filePath]?.expand(
+        (member) => [
+          _TextRemoval(member.start, member.end),
+          ...member.extraRanges
+              .map((range) => _TextRemoval(range.start, range.end)),
+        ],
+      ),
     ];
 
     if (removals.isEmpty) continue;
@@ -577,4 +723,11 @@ List<ClassMemberDefinition> computeUnusedClassMembers(
   }
 
   return unused;
+}
+
+class _ParsedUnit {
+  final CompilationUnit unit;
+  final String content;
+
+  _ParsedUnit(this.unit, this.content);
 }

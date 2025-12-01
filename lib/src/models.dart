@@ -42,6 +42,13 @@ class ModuleGroup {
 /// Kind of class member.
 enum ClassMemberKind { method, getter, setter, field }
 
+class OffsetRange {
+  final int start;
+  final int end;
+
+  const OffsetRange(this.start, this.end);
+}
+
 /// Represents a deletable class member such as a method or accessor.
 class ClassMemberDefinition {
   final String className;
@@ -51,6 +58,7 @@ class ClassMemberDefinition {
   final int end;
   final ClassMemberKind kind;
   final bool isStatic;
+  final List<OffsetRange> extraRanges;
 
   ClassMemberDefinition({
     required this.className,
@@ -60,6 +68,7 @@ class ClassMemberDefinition {
     required this.end,
     required this.kind,
     required this.isStatic,
+    this.extraRanges = const [],
   });
 
   @override

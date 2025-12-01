@@ -48,7 +48,7 @@ dart run build_runner build -d # Regenerate assets as dartd is read-only toward 
 ## Notes and limitations
 
 - Heuristic detection: reflection, string lookups, or dynamic calls may appear unused.
-- Fields referenced by constructors are left intact; removing them would require signature updates.
+- Constructor parameters/initializers tied only to unused fields are removed alongside those fields; mixed constructors are edited conservatively.
 - Always review `dartd analyze` output before committing fixes.
 
 ## Development

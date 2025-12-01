@@ -25,13 +25,25 @@ class Foo {
 
   String unusedField = 'unused';
 
-  final int keptByConstructor;
+  final String keptByUsage;
 
-  Foo(this.keptByConstructor);
+  final String? unusedFromCtor;
+
+  Foo({required this.keptByUsage, this.unusedFromCtor});
+
+  void touch() {
+    print(keptByUsage);
+  }
+}
+
+class OnlyCtorField {
+  final String baseName;
+
+  OnlyCtorField({required this.baseName});
 }
 
 void runFoo() {
-  Foo().usedMethod();
+  Foo(keptByUsage: 'k').usedMethod();
 }
 ''');
 
@@ -44,12 +56,18 @@ void runFoo() {
 
     expect(
       unused.map((m) => m.name),
-      containsAll(
-        ['unusedMethod', 'unusedGetter', '_internalUnused', 'unusedField'],
-      ),
+      containsAll([
+        'unusedMethod',
+        'unusedGetter',
+        '_internalUnused',
+        'unusedField',
+        'touch',
+        'unusedFromCtor',
+        'baseName',
+      ]),
     );
     expect(unused.map((m) => m.name), isNot(contains('usedMethod')));
-    expect(unused.map((m) => m.name), isNot(contains('keptByConstructor')));
+    expect(unused.map((m) => m.name), isNot(contains('keptByUsage')));
 
     final membersToDeleteByFile = <String, List<ClassMemberDefinition>>{};
     for (final member in unused) {
@@ -66,6 +84,14 @@ void runFoo() {
     expect(updatedContent, isNot(contains('unusedGetter')));
     expect(updatedContent, isNot(contains('_internalUnused')));
     expect(updatedContent, isNot(contains('unusedField')));
-    expect(updatedContent, contains('keptByConstructor'));
+    expect(updatedContent, contains('keptByUsage'));
+    expect(updatedContent, isNot(contains('unusedFromCtor')));
+    expect(updatedContent, isNot(contains('this.unusedFromCtor')));
+    expect(updatedContent, contains('keptByUsage:'));
+
+    final updatedClassContent = file.readAsStringSync();
+    expect(updatedClassContent, contains('class OnlyCtorField'));
+    expect(updatedClassContent, isNot(contains('OnlyCtorField({')));
+    expect(updatedClassContent, isNot(contains('baseName')));
   });
 }

@@ -10,7 +10,7 @@ dartd analyze --root <path> [--json]
 - `--json`: emit JSON report
 
 ### fix
-Removes unused class blocks and unreferenced `lib/` modules.
+Removes unused class blocks, unused methods/getters/setters/fields inside classes, and unreferenced `lib/` modules.
 ```
 dartd fix --root <path> [--dry-run]
 ```

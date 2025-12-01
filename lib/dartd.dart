@@ -6,5 +6,8 @@ export 'src/analyzer.dart'
         analyzeProject,
         ProjectAnalyzer,
         computeUnusedGroups,
+        computeUnusedClassMembers,
         computeDeletableNonModuleFiles,
-        applyFixes;
+        applyFixes,
+        applyClassMemberFixes,
+        applyCombinedFixes;

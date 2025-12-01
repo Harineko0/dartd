@@ -39,6 +39,42 @@ class ModuleGroup {
   ModuleGroup(this.baseName, this.members);
 }
 
+/// Kind of class member.
+enum ClassMemberKind { method, getter, setter, field }
+
+/// Represents a deletable class member such as a method or accessor.
+class ClassMemberDefinition {
+  final String className;
+  final String name;
+  final String filePath;
+  final int start;
+  final int end;
+  final ClassMemberKind kind;
+  final bool isStatic;
+
+  ClassMemberDefinition({
+    required this.className,
+    required this.name,
+    required this.filePath,
+    required this.start,
+    required this.end,
+    required this.kind,
+    required this.isStatic,
+  });
+
+  @override
+  String toString() {
+    final staticPrefix = isStatic ? 'static ' : '';
+    final label = switch (kind) {
+      ClassMemberKind.field => 'field',
+      ClassMemberKind.getter => 'getter',
+      ClassMemberKind.setter => 'setter',
+      ClassMemberKind.method => 'method',
+    };
+    return '$staticPrefix$label "$name" in $className ($filePath)';
+  }
+}
+
 /// Result of analyzing the project.
 class ProjectAnalysis {
   final Map<String, ModuleGroup> groupsByBaseName;
@@ -61,6 +97,9 @@ class ProjectAnalysis {
   /// Non-module top level declarations per file.
   final Map<String, Set<String>> nonModuleDeclarationsByFile;
 
+  /// Collected class members that can be evaluated for removal.
+  final List<ClassMemberDefinition> classMembers;
+
   ProjectAnalysis({
     required this.groupsByBaseName,
     required this.usedNamesFromUserCode,
@@ -68,5 +107,6 @@ class ProjectAnalysis {
     required this.filesWithModules,
     required this.allDartFiles,
     required this.nonModuleDeclarationsByFile,
+    required this.classMembers,
   });
 }

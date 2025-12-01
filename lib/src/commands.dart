@@ -10,10 +10,29 @@ Future<void> runAnalyzeCommand(String rootPath) async {
 
   final analysis = await analyzeProject(rootPath);
 
+  final unusedClassMembers = computeUnusedClassMembers(
+    analysis.classMembers,
+    analysis.usedNamesFromAllFiles,
+  );
+
+  if (unusedClassMembers.isEmpty) {
+    print('No unused class members found.');
+  } else {
+    print('=== Unused class members ===');
+    for (final member in unusedClassMembers) {
+      if (isGeneratedFile(member.filePath)) continue;
+      print('- ${member.className}.${member.name} (${member.filePath})');
+    }
+  }
+
   final unusedGroups = computeUnusedGroups(
     analysis.groupsByBaseName,
     analysis.usedNamesFromUserCode,
   );
+
+  if (unusedClassMembers.isNotEmpty && unusedGroups.isNotEmpty) {
+    print('');
+  }
 
   if (unusedGroups.isEmpty) {
     print('No unused modules found.');
@@ -53,16 +72,22 @@ Future<void> runFixCommand(String rootPath) async {
 
   final analysis = await analyzeProject(rootPath);
 
+  final unusedClassMembers = computeUnusedClassMembers(
+    analysis.classMembers,
+    analysis.usedNamesFromAllFiles,
+  );
+
   final unusedGroups = computeUnusedGroups(
     analysis.groupsByBaseName,
     analysis.usedNamesFromUserCode,
   );
 
-  if (unusedGroups.isEmpty) {
-    print('No unused modules found. Nothing to fix.');
+  if (unusedGroups.isEmpty && unusedClassMembers.isEmpty) {
+    print('No unused modules or class members found. Nothing to fix.');
   } else {
-    print('Removing unused modules...');
+    print('Removing unused code...');
     final modulesToDeleteByFile = <String, List<ModuleDefinition>>{};
+    final classMembersToDeleteByFile = <String, List<ClassMemberDefinition>>{};
 
     for (final group in unusedGroups) {
       for (final module in group.members) {
@@ -77,7 +102,22 @@ Future<void> runFixCommand(String rootPath) async {
       }
     }
 
-    applyFixes(modulesToDeleteByFile);
+    for (final member in unusedClassMembers) {
+      // Do not touch generated files like *.g.dart / *.freezed.dart.
+      if (isGeneratedFile(member.filePath)) {
+        continue;
+      }
+
+      classMembersToDeleteByFile
+          .putIfAbsent(member.filePath, () => <ClassMemberDefinition>[])
+          .add(member);
+    }
+
+    applyCombinedFixes(
+      modulesToDeleteByFile: modulesToDeleteByFile,
+      classMembersToDeleteByFile: classMembersToDeleteByFile,
+      updateLabel: 'modules/class members',
+    );
   }
 
   // Delete files with no used module/non-module definitions.

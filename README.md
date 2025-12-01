@@ -12,7 +12,7 @@ dart pub global activate dartd
 
 - `dartd analyze` — scan `lib/` and report unused module groups and top-level declarations.
 - `dartd analyze --root packages/my_feature/lib` — target a specific package or feature directory.
-- `dartd fix` — remove unused modules and delete empty Dart files under `lib/`.
+- `dartd fix` — remove unused modules, unused class methods/getters/setters/fields, and delete empty Dart files under `lib/`.
 - `dartd fix --root packages/my_feature/lib` — apply fixes to a different root.
 
 Typical workflow:
@@ -27,7 +27,7 @@ dart run build_runner build -d # Regenerate assets as dartd is read-only toward 
 ## Highlights
 
 - Module-aware grouping keeps related symbols together so one reference preserves the whole group.
-- Analyzer and fixer understand files, classes, enums, extensions, typedefs, globals, and generated assets.
+- Analyzer and fixer understand files, classes (including unused methods/accessors/fields), enums, extensions, typedefs, globals, and generated assets.
 - Fast, CLI-first experience that works across Dart and Flutter codebases with no framework assumptions.
 - Read-only stance toward generated files; they feed usage info but are never rewritten.
 
@@ -48,6 +48,7 @@ dart run build_runner build -d # Regenerate assets as dartd is read-only toward 
 ## Notes and limitations
 
 - Heuristic detection: reflection, string lookups, or dynamic calls may appear unused.
+- Fields referenced by constructors are left intact; removing them would require signature updates.
 - Always review `dartd analyze` output before committing fixes.
 
 ## Development

@@ -70,31 +70,30 @@ Future<void> runAnalyzeCommand(String rootPath) async {
 Future<void> runFixCommand(String rootPath) async {
   print('Analyzing project under: $rootPath');
 
-  final analysis = await analyzeProject(rootPath);
+  var iteration = 1;
+  var hasAppliedFix = false;
+  final changeLogs = <String>[];
 
-  final unusedClassMembers = computeUnusedClassMembers(
-    analysis.classMembers,
-    analysis.usedNamesFromAllFiles,
-  );
+  while (true) {
+    final analysis = await analyzeProject(rootPath);
 
-  final unusedGroups = computeUnusedGroups(
-    analysis.groupsByBaseName,
-    analysis.usedNamesFromUserCode,
-  );
+    final unusedClassMembers = computeUnusedClassMembers(
+      analysis.classMembers,
+      analysis.usedNamesFromAllFiles,
+    );
 
-  if (unusedGroups.isEmpty && unusedClassMembers.isEmpty) {
-    print('No unused modules or class members found. Nothing to fix.');
-  } else {
-    print('Removing unused code...');
+    final unusedGroups = computeUnusedGroups(
+      analysis.groupsByBaseName,
+      analysis.usedNamesFromUserCode,
+    );
+
     final modulesToDeleteByFile = <String, List<ModuleDefinition>>{};
     final classMembersToDeleteByFile = <String, List<ClassMemberDefinition>>{};
 
     for (final group in unusedGroups) {
       for (final module in group.members) {
         // Do not touch generated files like *.g.dart / *.freezed.dart.
-        if (isGeneratedFile(module.filePath)) {
-          continue;
-        }
+        if (isGeneratedFile(module.filePath)) continue;
 
         modulesToDeleteByFile
             .putIfAbsent(module.filePath, () => <ModuleDefinition>[])
@@ -104,36 +103,56 @@ Future<void> runFixCommand(String rootPath) async {
 
     for (final member in unusedClassMembers) {
       // Do not touch generated files like *.g.dart / *.freezed.dart.
-      if (isGeneratedFile(member.filePath)) {
-        continue;
-      }
+      if (isGeneratedFile(member.filePath)) continue;
 
       classMembersToDeleteByFile
           .putIfAbsent(member.filePath, () => <ClassMemberDefinition>[])
           .add(member);
     }
 
-    applyCombinedFixes(
-      modulesToDeleteByFile: modulesToDeleteByFile,
-      classMembersToDeleteByFile: classMembersToDeleteByFile,
-      updateLabel: 'modules/class members',
-    );
-  }
+    final deletableFiles = computeDeletableNonModuleFiles(analysis).toList()
+      ..sort();
 
-  // Delete files with no used module/non-module definitions.
-  final deletableFiles = computeDeletableNonModuleFiles(analysis).toList()
-    ..sort();
+    final nothingToDelete = modulesToDeleteByFile.isEmpty &&
+        classMembersToDeleteByFile.isEmpty &&
+        deletableFiles.isEmpty;
 
-  if (deletableFiles.isEmpty) {
-    print('No files without module/non-module definitions to delete.');
-  } else {
-    print('\nDeleting files with no used module/non-module definitions...');
+    if (nothingToDelete) {
+      if (!hasAppliedFix) {
+        print('No unused modules or class members found. Nothing to fix.');
+      }
+      break;
+    }
+
+    print('Iteration $iteration: applying deletions...');
+
+    if (modulesToDeleteByFile.isNotEmpty ||
+        classMembersToDeleteByFile.isNotEmpty) {
+      applyCombinedFixes(
+        modulesToDeleteByFile: modulesToDeleteByFile,
+        classMembersToDeleteByFile: classMembersToDeleteByFile,
+        updateLabel: 'modules/class members',
+        onFileChange: changeLogs.add,
+      );
+      hasAppliedFix = true;
+    }
+
     for (final filePath in deletableFiles) {
       final file = File(filePath);
       if (file.existsSync()) {
         file.deleteSync();
-        print('Deleted file: $filePath');
+        hasAppliedFix = true;
+        changeLogs.add('Deleted file: $filePath');
       }
+    }
+
+    iteration++;
+  }
+
+  if (changeLogs.isNotEmpty) {
+    print('\nChanges applied:');
+    for (final log in changeLogs) {
+      print(log);
     }
   }
 

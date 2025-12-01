@@ -648,6 +648,7 @@ void applyCombinedFixes({
   required Map<String, List<ModuleDefinition>> modulesToDeleteByFile,
   required Map<String, List<ClassMemberDefinition>> classMembersToDeleteByFile,
   String updateLabel = 'code',
+  void Function(String message)? onFileChange,
 }) {
   final allFiles = <String>{
     ...modulesToDeleteByFile.keys,
@@ -675,12 +676,14 @@ void applyCombinedFixes({
     var content = file.readAsStringSync();
     content = _applyTextRemovals(content, removals);
 
+    final log = onFileChange ?? print;
+
     if (content.trim().isEmpty) {
       file.deleteSync();
-      print('Deleted empty file after removing $updateLabel: $filePath');
+      log('Deleted file: $filePath');
     } else {
       file.writeAsStringSync(content);
-      print('Updated file ($updateLabel): $filePath');
+      log('Updated file ($updateLabel): $filePath');
     }
   }
 }

@@ -1,3 +1,8 @@
+<div align="center">
+    <img src="https://github.com/user-attachments/assets/4ac64317-b7b6-4b65-b351-c94d5f8bd057" alt="dartd logo" width="256" height="256">
+    <h1>dartd</h1>
+</div>
+
 # dartd
 
 [![Pub](https://img.shields.io/pub/v/dartd?label=pub&logo=dart&logoColor=white)](https://pub.dev/packages/dartd)

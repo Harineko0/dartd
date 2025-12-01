@@ -83,7 +83,7 @@ ArgParser _buildArgParser() {
 
 void _printUsage(ArgParser parser) {
   print('''
-Flutter unused module cleaner
+dartd - A tool to analyze and remove unused modules.
 
 Usage:
   dartd analyze --root lib

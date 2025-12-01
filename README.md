@@ -18,9 +18,10 @@ dart pub global activate dartd
 Typical workflow:
 
 ```bash
-dartd analyze           # review what can go
-dartd fix               # prune unused code safely
-dartd analyze --root .  # optional sanity pass across the whole repo
+dartd analyze                  # review what can go
+dartd fix                      # prune unused code safely
+dartd analyze --root .         # optional sanity pass across the whole repo
+dart run build_runner build -d # Regenerate assets as dartd is read-only toward generated files
 ```
 
 ## Highlights

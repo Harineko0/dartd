@@ -697,9 +697,62 @@ String _applyTextRemovals(String content, List<_TextRemoval> removals) {
   var updated = content;
   for (final removal in sorted) {
     updated = updated.replaceRange(removal.start, removal.end, '');
+    updated = _collapseWhitespaceAroundRemoval(updated, removal.start);
   }
 
   return updated;
+}
+
+String _collapseWhitespaceAroundRemoval(String content, int pivot) {
+  if (content.isEmpty) return content;
+
+  final clampedPivot =
+      pivot < 0 ? 0 : (pivot > content.length ? content.length : pivot);
+
+  final left = _previousNonWhitespace(content, clampedPivot);
+  final right = _nextNonWhitespace(content, clampedPivot);
+  if (right == null) return content;
+
+  final regionStart = (left ?? -1) + 1;
+  final regionEnd = right;
+  final region = content.substring(regionStart, regionEnd);
+  final newlineCount = '\n'.allMatches(region).length;
+
+  if (newlineCount < 3) return content;
+
+  final indentStart = _indentStart(content, right);
+  final indent = content.substring(indentStart, right);
+
+  return content.replaceRange(regionStart, regionEnd, '\n\n$indent');
+}
+
+int? _previousNonWhitespace(String content, int start) {
+  var idx = start - 1;
+  while (idx >= 0) {
+    if (!_isWhitespace(content.codeUnitAt(idx))) return idx;
+    idx--;
+  }
+  return null;
+}
+
+int? _nextNonWhitespace(String content, int start) {
+  var idx = start;
+  while (idx < content.length) {
+    if (!_isWhitespace(content.codeUnitAt(idx))) return idx;
+    idx++;
+  }
+  return null;
+}
+
+int _indentStart(String content, int nonWhitespaceIndex) {
+  var idx = nonWhitespaceIndex;
+  while (idx > 0) {
+    final char = content.codeUnitAt(idx - 1);
+    if (char == 0x0a || char == 0x0d) break;
+    if (!_isWhitespace(char)) break;
+    idx--;
+  }
+  return idx;
 }
 
 class _TextRemoval {

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.1
+- Enhance README.md
+
 ## 0.4.0
 - Add class methods/members removal feature
 - Handled unused fields even when referenced by constructors: collectors now attach extra removal ranges for constructor field formals/initializers and drop entire constructors when they only served unused   fields; removals apply alongside module fixes with new OffsetRange support.

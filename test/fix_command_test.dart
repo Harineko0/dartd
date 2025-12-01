@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dartd/src/analyzer.dart';
 import 'package:dartd/src/models.dart';
 import 'package:dartd/src/commands.dart';
+import 'package:dartd/src/removal_targets.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -70,6 +71,7 @@ int bar(BarRef ref) => 1;
       end: end,
       isProvider: false,
       isRiverpod: true,
+      kind: ModuleDeclarationKind.riverpodFunction,
     );
 
     applyFixes({
@@ -80,5 +82,33 @@ int bar(BarRef ref) => 1;
     expect(updated, isNot(contains('\n\n\n')));
     expect(updated, contains('class Something {}\n\n@riverpod'));
     expect(updated, contains('@riverpod\nint bar'));
+  });
+
+  test('fix honors selective removal targets', () async {
+    final tempDir = Directory.systemTemp.createTempSync('dartd_fix_selective_');
+    addTearDown(() => tempDir.deleteSync(recursive: true));
+
+    final libDir = Directory(p.join(tempDir.path, 'lib'))..createSync();
+    final file = File(p.join(libDir.path, 'selective.dart'));
+
+    file.writeAsStringSync('''
+final unusedProvider = 0;
+
+class Foo {
+  void unusedMethod() {}
+
+  String unusedField = 'x';
+}
+''');
+
+    await runFixCommand(
+      libDir.path,
+      removalTargets: RemovalTargets.fromNames(['method']),
+    );
+
+    final updated = file.readAsStringSync();
+    expect(updated, contains('unusedProvider'));
+    expect(updated, contains('unusedField'));
+    expect(updated, isNot(contains('unusedMethod')));
   });
 }

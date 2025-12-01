@@ -14,6 +14,7 @@ dart pub global activate dartd
 - `dartd analyze --root packages/my_feature/lib` — target a specific package or feature directory.
 - `dartd fix` — remove unused modules, unused class methods/getters/setters/fields, and delete empty Dart files under `lib/`.
 - `dartd fix --root packages/my_feature/lib` — apply fixes to a different root.
+- `dartd fix --remove method` — narrow removals (options: file, class, function, var, method, member; default: all).
 
 Typical workflow:
 

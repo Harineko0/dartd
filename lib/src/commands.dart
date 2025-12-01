@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'analyzer.dart';
 import 'models.dart';
+import 'removal_targets.dart';
 import 'utils.dart';
 
 /// Entry point for `analyze` command.
@@ -66,8 +67,12 @@ Future<void> runAnalyzeCommand(String rootPath) async {
 }
 
 /// Entry point for `fix` command.
-/// Removes unused modules and deletes empty module files.
-Future<void> runFixCommand(String rootPath) async {
+/// Removes unused declarations matching [removalTargets] and deletes empty
+/// module files when file removals are enabled.
+Future<void> runFixCommand(
+  String rootPath, {
+  RemovalTargets removalTargets = const RemovalTargets.all(),
+}) async {
   print('Analyzing project under: $rootPath');
 
   var iteration = 1;
@@ -94,6 +99,7 @@ Future<void> runFixCommand(String rootPath) async {
       for (final module in group.members) {
         // Do not touch generated files like *.g.dart / *.freezed.dart.
         if (isGeneratedFile(module.filePath)) continue;
+        if (!removalTargets.allowModule(module)) continue;
 
         modulesToDeleteByFile
             .putIfAbsent(module.filePath, () => <ModuleDefinition>[])
@@ -104,14 +110,16 @@ Future<void> runFixCommand(String rootPath) async {
     for (final member in unusedClassMembers) {
       // Do not touch generated files like *.g.dart / *.freezed.dart.
       if (isGeneratedFile(member.filePath)) continue;
+      if (!removalTargets.allowClassMember(member)) continue;
 
       classMembersToDeleteByFile
           .putIfAbsent(member.filePath, () => <ClassMemberDefinition>[])
           .add(member);
     }
 
-    final deletableFiles = computeDeletableNonModuleFiles(analysis).toList()
-      ..sort();
+    final deletableFiles = removalTargets.removeFiles
+        ? (computeDeletableNonModuleFiles(analysis).toList()..sort())
+        : <String>[];
 
     final nothingToDelete = modulesToDeleteByFile.isEmpty &&
         classMembersToDeleteByFile.isEmpty &&
@@ -119,7 +127,8 @@ Future<void> runFixCommand(String rootPath) async {
 
     if (nothingToDelete) {
       if (!hasAppliedFix) {
-        print('No unused modules or class members found. Nothing to fix.');
+        print(
+            'No unused declarations matched the remove options. Nothing to fix.');
       }
       break;
     }
@@ -132,17 +141,20 @@ Future<void> runFixCommand(String rootPath) async {
         modulesToDeleteByFile: modulesToDeleteByFile,
         classMembersToDeleteByFile: classMembersToDeleteByFile,
         updateLabel: 'modules/class members',
+        deleteEmptyFiles: removalTargets.removeFiles,
         onFileChange: changeLogs.add,
       );
       hasAppliedFix = true;
     }
 
-    for (final filePath in deletableFiles) {
-      final file = File(filePath);
-      if (file.existsSync()) {
-        file.deleteSync();
-        hasAppliedFix = true;
-        changeLogs.add('Deleted file: $filePath');
+    if (removalTargets.removeFiles) {
+      for (final filePath in deletableFiles) {
+        final file = File(filePath);
+        if (file.existsSync()) {
+          file.deleteSync();
+          hasAppliedFix = true;
+          changeLogs.add('Deleted file: $filePath');
+        }
       }
     }
 

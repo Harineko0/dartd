@@ -10,6 +10,7 @@ class ModuleDefinition {
   final int end;
   final bool isProvider;
   final bool isRiverpod;
+  final ModuleDeclarationKind kind;
 
   ModuleDefinition({
     required this.baseName,
@@ -19,11 +20,16 @@ class ModuleDefinition {
     required this.end,
     required this.isProvider,
     required this.isRiverpod,
+    required this.kind,
   });
 
   @override
   String toString() {
-    final type = isProvider ? 'provider' : (isRiverpod ? 'riverpod' : 'module');
+    final type = switch (kind) {
+      ModuleDeclarationKind.providerClass => 'provider class',
+      ModuleDeclarationKind.providerVariable => 'provider',
+      ModuleDeclarationKind.riverpodFunction => 'riverpod function',
+    };
     return '$type "$name" in $filePath';
   }
 }
@@ -41,6 +47,9 @@ class ModuleGroup {
 
 /// Kind of class member.
 enum ClassMemberKind { method, getter, setter, field }
+
+/// Kind of module declaration.
+enum ModuleDeclarationKind { providerClass, riverpodFunction, providerVariable }
 
 class OffsetRange {
   final int start;

@@ -219,6 +219,7 @@ class ProjectAnalyzer {
         end: decl.end,
         isProvider: false,
         isRiverpod: true,
+        kind: ModuleDeclarationKind.riverpodFunction,
       );
       groupsByBaseName
           .putIfAbsent(name, () => <ModuleDefinition>[])
@@ -248,6 +249,7 @@ class ProjectAnalyzer {
           end: decl.end,
           isProvider: true,
           isRiverpod: false,
+          kind: ModuleDeclarationKind.providerVariable,
         );
         groupsByBaseName
             .putIfAbsent(baseName, () => <ModuleDefinition>[])
@@ -279,6 +281,7 @@ class ProjectAnalyzer {
         end: decl.end,
         isProvider: true,
         isRiverpod: false,
+        kind: ModuleDeclarationKind.providerClass,
       );
       groupsByBaseName
           .putIfAbsent(baseName, () => <ModuleDefinition>[])
@@ -644,10 +647,12 @@ void applyClassMemberFixes(
 }
 
 /// Apply in-place fixes to delete both modules and class members.
+/// Set [deleteEmptyFiles] to false to retain files that become empty.
 void applyCombinedFixes({
   required Map<String, List<ModuleDefinition>> modulesToDeleteByFile,
   required Map<String, List<ClassMemberDefinition>> classMembersToDeleteByFile,
   String updateLabel = 'code',
+  bool deleteEmptyFiles = true,
   void Function(String message)? onFileChange,
 }) {
   final allFiles = <String>{
@@ -679,8 +684,13 @@ void applyCombinedFixes({
     final log = onFileChange ?? print;
 
     if (content.trim().isEmpty) {
-      file.deleteSync();
-      log('Deleted file: $filePath');
+      if (deleteEmptyFiles) {
+        file.deleteSync();
+        log('Deleted file: $filePath');
+      } else {
+        file.writeAsStringSync(content);
+        log('Updated file ($updateLabel): $filePath');
+      }
     } else {
       file.writeAsStringSync(content);
       log('Updated file ($updateLabel): $filePath');

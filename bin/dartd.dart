@@ -5,8 +5,18 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:dartd/src/commands.dart';
+import 'package:dartd/src/removal_targets.dart';
 
 const int _exitCodeUsage = 64;
+const _removeOptionNames = [
+  'all',
+  'file',
+  'class',
+  'function',
+  'var',
+  'method',
+  'member',
+];
 
 Future<void> main(List<String> args) async {
   final code = await _runCli(args);
@@ -44,7 +54,13 @@ Future<int> _runCli(List<String> args) async {
       await runAnalyzeCommand(rootPath);
       return 0;
     case 'fix':
-      await runFixCommand(rootPath);
+      final removalTargets = RemovalTargets.fromNames(
+        (command['remove'] as List<Object?>?)?.cast<String>() ?? const ['all'],
+      );
+      await runFixCommand(
+        rootPath,
+        removalTargets: removalTargets,
+      );
       return 0;
     default:
       stderr.writeln('Unknown command: ${command.name}');
@@ -68,6 +84,22 @@ ArgParser _buildArgParser() {
       abbr: 'r',
       defaultsTo: 'lib',
       help: 'Root directory to analyze and fix.',
+    )
+    ..addMultiOption(
+      'remove',
+      defaultsTo: const ['all'],
+      allowed: _removeOptionNames,
+      help:
+          'Kinds of unused declarations to remove (file, class, function, var, method, member, all).',
+      allowedHelp: const {
+        'all': 'Remove all supported unused declarations.',
+        'file': 'Delete empty Dart files with no used declarations.',
+        'class': 'Remove unused class-based modules (e.g. *Provider classes).',
+        'function': 'Remove unused annotated module functions.',
+        'var': 'Remove unused module/provider variables.',
+        'method': 'Remove unused class methods/getters/setters.',
+        'member': 'Remove unused class members (fields, methods, accessors).',
+      },
     );
 
   return ArgParser()
@@ -83,15 +115,15 @@ ArgParser _buildArgParser() {
 
 void _printUsage(ArgParser parser) {
   print('''
-dartd - A tool to analyze and remove unused modules.
+dartd - A tool to analyze and remove unused Dart declarations.
 
 Usage:
   dartd analyze --root lib
-  dartd fix --root lib
+  dartd fix --root lib [--remove all|file|class|function|var|method|member]
 
 Commands:
-  analyze   Analyze unused riverpod modules.
-  fix       Remove unused riverpod modules and empty module files.
+  analyze   Analyze unused declarations.
+  fix       Remove unused declarations (configurable via --remove).
 
 Options:
 ${parser.usage}

@@ -16,3 +16,8 @@ executables:
 
 dev_dependencies:
   test: ^1.25.2
+  riverpod: ^3.0.3
+  riverpod_generator: ^3.0.0-dev.11
+  riverpod_annotation: ^3.0.3
+  build_runner: ^2.4.13
+  flutter_riverpod: ^3.0.3

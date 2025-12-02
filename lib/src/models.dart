@@ -51,6 +51,9 @@ enum ClassMemberKind { method, getter, setter, field }
 /// Kind of module declaration.
 enum ModuleDeclarationKind { providerClass, riverpodFunction, providerVariable }
 
+/// Kind of deletable top-level declaration.
+enum TopLevelDeclarationKind { function }
+
 class OffsetRange {
   final int start;
   final int end;
@@ -93,6 +96,31 @@ class ClassMemberDefinition {
   }
 }
 
+/// Represents a deletable top-level declaration such as a function.
+class TopLevelDeclaration {
+  final String name;
+  final String filePath;
+  final int start;
+  final int end;
+  final TopLevelDeclarationKind kind;
+
+  TopLevelDeclaration({
+    required this.name,
+    required this.filePath,
+    required this.start,
+    required this.end,
+    required this.kind,
+  });
+
+  @override
+  String toString() {
+    final label = switch (kind) {
+      TopLevelDeclarationKind.function => 'function',
+    };
+    return '$label "$name" in $filePath';
+  }
+}
+
 /// Result of analyzing the project.
 class ProjectAnalysis {
   final Map<String, ModuleGroup> groupsByBaseName;
@@ -118,6 +146,9 @@ class ProjectAnalysis {
   /// Collected class members that can be evaluated for removal.
   final List<ClassMemberDefinition> classMembers;
 
+  /// Collected top-level declarations that can be evaluated for removal.
+  final List<TopLevelDeclaration> topLevelDeclarations;
+
   ProjectAnalysis({
     required this.groupsByBaseName,
     required this.usedNamesFromUserCode,
@@ -126,5 +157,6 @@ class ProjectAnalysis {
     required this.allDartFiles,
     required this.nonModuleDeclarationsByFile,
     required this.classMembers,
+    required this.topLevelDeclarations,
   });
 }

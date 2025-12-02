@@ -15,15 +15,32 @@ Future<void> runAnalyzeCommand(String rootPath) async {
     analysis.classMembers,
     analysis.usedNamesFromAllFiles,
   );
+  final unusedTopLevel = computeUnusedTopLevelDeclarations(
+    analysis.topLevelDeclarations,
+    analysis.usedNamesFromAllFiles,
+  );
 
-  if (unusedClassMembers.isEmpty) {
-    print('No unused class members found.');
-  } else {
+  if (unusedClassMembers.isNotEmpty) {
     print('=== Unused class members ===');
     for (final member in unusedClassMembers) {
       if (isGeneratedFile(member.filePath)) continue;
       print('- ${member.className}.${member.name} (${member.filePath})');
     }
+  } else {
+    print('No unused class members found.');
+  }
+
+  if (unusedTopLevel.isNotEmpty) {
+    if (unusedClassMembers.isNotEmpty) {
+      print('');
+    }
+    print('=== Unused top-level declarations ===');
+    for (final decl in unusedTopLevel) {
+      if (isGeneratedFile(decl.filePath)) continue;
+      print('- $decl');
+    }
+  } else {
+    print('No unused top-level declarations found.');
   }
 
   final unusedGroups = computeUnusedGroups(
@@ -31,7 +48,8 @@ Future<void> runAnalyzeCommand(String rootPath) async {
     analysis.usedNamesFromUserCode,
   );
 
-  if (unusedClassMembers.isNotEmpty && unusedGroups.isNotEmpty) {
+  if ((unusedClassMembers.isNotEmpty || unusedTopLevel.isNotEmpty) &&
+      unusedGroups.isNotEmpty) {
     print('');
   }
 
@@ -91,9 +109,14 @@ Future<void> runFixCommand(
       analysis.groupsByBaseName,
       analysis.usedNamesFromUserCode,
     );
+    final unusedTopLevel = computeUnusedTopLevelDeclarations(
+      analysis.topLevelDeclarations,
+      analysis.usedNamesFromAllFiles,
+    );
 
     final modulesToDeleteByFile = <String, List<ModuleDefinition>>{};
     final classMembersToDeleteByFile = <String, List<ClassMemberDefinition>>{};
+    final topLevelToDeleteByFile = <String, List<TopLevelDeclaration>>{};
 
     for (final group in unusedGroups) {
       for (final module in group.members) {
@@ -117,12 +140,21 @@ Future<void> runFixCommand(
           .add(member);
     }
 
+    for (final declaration in unusedTopLevel) {
+      if (isGeneratedFile(declaration.filePath)) continue;
+      if (!removalTargets.allowTopLevel(declaration)) continue;
+      topLevelToDeleteByFile
+          .putIfAbsent(declaration.filePath, () => <TopLevelDeclaration>[])
+          .add(declaration);
+    }
+
     final deletableFiles = removalTargets.removeFiles
         ? (computeDeletableNonModuleFiles(analysis).toList()..sort())
         : <String>[];
 
     final nothingToDelete = modulesToDeleteByFile.isEmpty &&
         classMembersToDeleteByFile.isEmpty &&
+        topLevelToDeleteByFile.isEmpty &&
         deletableFiles.isEmpty;
 
     if (nothingToDelete) {
@@ -136,11 +168,13 @@ Future<void> runFixCommand(
     print('Iteration $iteration: applying deletions...');
 
     if (modulesToDeleteByFile.isNotEmpty ||
-        classMembersToDeleteByFile.isNotEmpty) {
+        classMembersToDeleteByFile.isNotEmpty ||
+        topLevelToDeleteByFile.isNotEmpty) {
       applyCombinedFixes(
         modulesToDeleteByFile: modulesToDeleteByFile,
         classMembersToDeleteByFile: classMembersToDeleteByFile,
-        updateLabel: 'modules/class members',
+        topLevelDeclarationsToDeleteByFile: topLevelToDeleteByFile,
+        updateLabel: 'modules/class members/top-level',
         deleteEmptyFiles: removalTargets.removeFiles,
         onFileChange: changeLogs.add,
       );

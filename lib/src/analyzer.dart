@@ -32,6 +32,7 @@ class ProjectAnalyzer {
 
     final nonModuleDeclarationsByFile = <String, Set<String>>{};
     final classMembers = <ClassMemberDefinition>[];
+    final topLevelDeclarations = <TopLevelDeclaration>[];
 
     for (final filePath in allFiles) {
       await _analyzeFile(
@@ -42,6 +43,7 @@ class ProjectAnalyzer {
         usedNamesFromAllFiles: usedNamesFromAllFiles,
         nonModuleDeclarationsByFile: nonModuleDeclarationsByFile,
         classMembers: classMembers,
+        topLevelDeclarations: topLevelDeclarations,
       );
     }
 
@@ -58,6 +60,7 @@ class ProjectAnalyzer {
       allDartFiles: allFiles,
       nonModuleDeclarationsByFile: nonModuleDeclarationsByFile,
       classMembers: classMembers,
+      topLevelDeclarations: topLevelDeclarations,
     );
   }
 
@@ -92,6 +95,7 @@ class ProjectAnalyzer {
     required Set<String> usedNamesFromAllFiles,
     required Map<String, Set<String>> nonModuleDeclarationsByFile,
     required List<ClassMemberDefinition> classMembers,
+    required List<TopLevelDeclaration> topLevelDeclarations,
   }) async {
     final parsed = await _parseCompilationUnit(filePath);
     if (parsed == null) return;
@@ -117,6 +121,7 @@ class ProjectAnalyzer {
       groupsByBaseName: groupsByBaseName,
       filesWithModules: filesWithModules,
       classMembers: classMembers,
+      topLevelDeclarations: topLevelDeclarations,
     );
 
     if (nonModuleNames.isNotEmpty) {
@@ -149,6 +154,7 @@ class ProjectAnalyzer {
     required Map<String, List<ModuleDefinition>> groupsByBaseName,
     required Set<String> filesWithModules,
     required List<ClassMemberDefinition> classMembers,
+    required List<TopLevelDeclaration> topLevelDeclarations,
   }) {
     final nonModuleNames = <String>{};
     var hasModuleInFile = false;
@@ -160,6 +166,7 @@ class ProjectAnalyzer {
           filePath: filePath,
           groupsByBaseName: groupsByBaseName,
           nonModuleNames: nonModuleNames,
+          topLevelDeclarations: topLevelDeclarations,
           onModuleFound: () => hasModuleInFile = true,
         );
       } else if (decl is TopLevelVariableDeclaration) {
@@ -204,6 +211,7 @@ class ProjectAnalyzer {
     required String filePath,
     required Map<String, List<ModuleDefinition>> groupsByBaseName,
     required Set<String> nonModuleNames,
+    required List<TopLevelDeclaration> topLevelDeclarations,
     required void Function() onModuleFound,
   }) {
     final name = decl.name.lexeme;
@@ -226,6 +234,15 @@ class ProjectAnalyzer {
           .add(module);
     } else {
       nonModuleNames.add(name);
+      topLevelDeclarations.add(
+        TopLevelDeclaration(
+          name: name,
+          filePath: filePath,
+          start: decl.offset,
+          end: decl.end,
+          kind: TopLevelDeclarationKind.function,
+        ),
+      );
     }
   }
 
@@ -631,6 +648,7 @@ void applyFixes(Map<String, List<ModuleDefinition>> modulesToDeleteByFile) {
   applyCombinedFixes(
     modulesToDeleteByFile: modulesToDeleteByFile,
     classMembersToDeleteByFile: const {},
+    topLevelDeclarationsToDeleteByFile: const {},
     updateLabel: 'modules',
   );
 }
@@ -642,6 +660,7 @@ void applyClassMemberFixes(
   applyCombinedFixes(
     modulesToDeleteByFile: const {},
     classMembersToDeleteByFile: membersToDeleteByFile,
+    topLevelDeclarationsToDeleteByFile: const {},
     updateLabel: 'class members',
   );
 }
@@ -651,6 +670,8 @@ void applyClassMemberFixes(
 void applyCombinedFixes({
   required Map<String, List<ModuleDefinition>> modulesToDeleteByFile,
   required Map<String, List<ClassMemberDefinition>> classMembersToDeleteByFile,
+  required Map<String, List<TopLevelDeclaration>>
+      topLevelDeclarationsToDeleteByFile,
   String updateLabel = 'code',
   bool deleteEmptyFiles = true,
   void Function(String message)? onFileChange,
@@ -658,6 +679,7 @@ void applyCombinedFixes({
   final allFiles = <String>{
     ...modulesToDeleteByFile.keys,
     ...classMembersToDeleteByFile.keys,
+    ...topLevelDeclarationsToDeleteByFile.keys,
   };
 
   for (final filePath in allFiles) {
@@ -674,6 +696,8 @@ void applyCombinedFixes({
               .map((range) => _TextRemoval(range.start, range.end)),
         ],
       ),
+      ...?topLevelDeclarationsToDeleteByFile[filePath]
+          ?.map((decl) => _TextRemoval(decl.start, decl.end)),
     ];
 
     if (removals.isEmpty) continue;
@@ -785,6 +809,26 @@ List<ClassMemberDefinition> computeUnusedClassMembers(
   for (final member in classMembers) {
     if (!usedNamesFromAllFiles.contains(member.name)) {
       unused.add(member);
+    }
+  }
+
+  return unused;
+}
+
+/// Compute unused top-level declarations such as free functions.
+List<TopLevelDeclaration> computeUnusedTopLevelDeclarations(
+  List<TopLevelDeclaration> declarations,
+  Set<String> usedNamesFromAllFiles,
+) {
+  final unused = <TopLevelDeclaration>[];
+
+  for (final declaration in declarations) {
+    if (declaration.name == 'main') {
+      // Preserve executable entrypoints even if they are not referenced.
+      continue;
+    }
+    if (!usedNamesFromAllFiles.contains(declaration.name)) {
+      unused.add(declaration);
     }
   }
 

@@ -72,6 +72,13 @@ class RemovalTargets {
         return removeMembers;
     }
   }
+
+  bool allowTopLevel(TopLevelDeclaration declaration) {
+    switch (declaration.kind) {
+      case TopLevelDeclarationKind.function:
+        return removeFunctions;
+    }
+  }
 }
 
 /// Types of declarations that can be removed.

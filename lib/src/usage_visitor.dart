@@ -10,6 +10,12 @@ class UsedNamesVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
+    if (_isConstructorReturnType(node)) {
+      // Using the class/enum name in its own constructor does not count as a
+      // real usage of that type elsewhere.
+      return;
+    }
+
     if (!node.inDeclarationContext()) {
       usedNames.add(node.name);
     }
@@ -22,5 +28,10 @@ class UsedNamesVisitor extends RecursiveAstVisitor<void> {
     final identifier = node.name2;
     usedNames.add(identifier.lexeme);
     super.visitNamedType(node);
+  }
+
+  bool _isConstructorReturnType(SimpleIdentifier node) {
+    final parent = node.parent;
+    return parent is ConstructorDeclaration && parent.returnType == node;
   }
 }

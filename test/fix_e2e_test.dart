@@ -17,7 +17,7 @@ void main() {
         _expectSuccess(result);
 
         final providerFile =
-            File(p.join(programDir.path, 'lib', 'user_provider.dart'));
+            File(p.join(programDir.path, 'lib', 'providers.dart'));
         expect(
           providerFile.existsSync(),
           isFalse,

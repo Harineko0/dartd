@@ -77,6 +77,13 @@ class RemovalTargets {
     switch (declaration.kind) {
       case TopLevelDeclarationKind.function:
         return removeFunctions;
+      case TopLevelDeclarationKind.variable:
+        return removeVariables;
+      case TopLevelDeclarationKind.classType:
+      case TopLevelDeclarationKind.enumType:
+      case TopLevelDeclarationKind.extension:
+      case TopLevelDeclarationKind.typeAlias:
+        return removeClasses;
     }
   }
 }

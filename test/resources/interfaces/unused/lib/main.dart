@@ -5,5 +5,5 @@ interface class CacheEntry {
 }
 
 void main() {
-  // CacheEntry and LocalCache are unused.
+  // Nothing in this file is referenced.
 }

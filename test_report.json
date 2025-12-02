@@ -1,0 +1,69 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 67.0.0 (92.0.0 available)
+  analyzer 6.4.1 (9.0.0 available)
+  analyzer_plugin 0.11.3 (0.13.11 available)
+  build 2.4.1 (4.0.3 available)
+  build_config 1.1.2 (1.2.0 available)
+  build_resolvers 2.4.2 (3.0.4 available)
+  build_runner 2.4.13 (2.10.4 available)
+  build_runner_core 7.3.2 (9.3.2 available)
+  characters 1.4.0 (1.4.1 available)
+  custom_lint 0.5.11 (0.8.1 available)
+  custom_lint_core 0.5.14 (0.8.1 available)
+  dart_style 2.3.6 (3.1.3 available)
+  freezed_annotation 2.4.4 (3.1.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.16.0 (1.17.0 available)
+  riverpod_analyzer_utils 1.0.0-dev.1 (1.0.0-dev.7 available)
+  riverpod_generator 3.0.0-dev.11 (3.0.3 available)
+  rxdart 0.27.7 (0.28.0 available)
+  shelf_web_socket 2.0.1 (3.0.0 available)
+  source_gen 1.5.0 (4.1.1 available)
+  test 1.26.2 (1.28.0 available)
+  test_api 0.7.6 (0.7.8 available)
+  test_core 0.6.11 (0.6.14 available)
+Got dependencies!
+24 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+{"protocolVersion":"0.1.1","runnerVersion":"1.26.2","pid":38827,"type":"start","time":0}
+{"suite":{"id":0,"platform":"vm","path":"/Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"suite","time":0}
+{"test":{"id":1,"name":"loading /Users/hari/proj/dartd/test/fix_e2e_test.dart","suiteID":0,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":0}
+{"count":1,"time":2,"type":"allSuites"}
+
+[{"event":"test.startedProcess","params":{"vmServiceUri":null}}]
+{"testID":1,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":1001}
+{"group":{"id":2,"suiteID":0,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":13,"line":null,"column":null,"url":null},"type":"group","time":1002}
+{"group":{"id":3,"suiteID":0,"parentID":2,"name":"dartd fix e2e","metadata":{"skip":false,"skipReason":null},"testCount":13,"line":9,"column":3,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"group","time":1002}
+{"test":{"id":4,"name":"dartd fix e2e removes unused provider even when base name is used elsewhere","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":10,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":1003}
+{"testID":4,"error":"Expected: false\n  Actual: <true>\nexitCode: 0\nstdout:\nAnalyzing project under: /var/folders/_x/q977j71j19g931x4xkqt_ych0000gn/T/dartd_prog_provider_masked_by_modelCZq38x/lib\nNo unused declarations matched the remove options. Nothing to fix.\nFix completed.\n\nstderr:\n\n","stackTrace":"package:matcher              expect\ntest/fix_e2e_test.dart 21:9  main.<fn>.<fn>\n","isFailure":true,"type":"error","time":3781}
+{"testID":4,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":3781}
+{"test":{"id":5,"name":"dartd fix e2e removes unused class members and preserves used ones","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":29,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":3781}
+{"testID":5,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":6382}
+{"test":{"id":6,"name":"dartd fix e2e deletes files that only contain unused helpers","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":47,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":6382}
+{"testID":6,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9077}
+{"test":{"id":7,"name":"dartd fix e2e deletes unused extension files","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":61,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":9077}
+{"testID":7,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":11639}
+{"test":{"id":8,"name":"dartd fix e2e deletes unused class with only a constructor","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":72,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":11639}
+{"testID":8,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":14331}
+{"test":{"id":9,"name":"dartd fix e2e deletes unused class with named parameter constructor","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":83,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":14332}
+{"testID":9,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":17007}
+{"test":{"id":10,"name":"dartd fix e2e removes unused getter/setter members","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":94,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":17007}
+{"testID":10,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":19622}
+{"test":{"id":11,"name":"dartd fix e2e removes unused riverpod modules","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":111,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":19622}
+{"testID":11,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":22560}
+{"test":{"id":12,"name":"dartd fix e2e deletes unused generic function definitions","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":122,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":22560}
+{"testID":12,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":25480}
+{"test":{"id":13,"name":"dartd fix e2e deletes unused generic extensions","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":133,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":25480}
+{"testID":13,"error":"Expected: false\n  Actual: <true>\nexitCode: 0\nstdout:\nAnalyzing project under: /var/folders/_x/q977j71j19g931x4xkqt_ych0000gn/T/dartd_prog_generic_extension_unusedvaL51H/lib\nIteration 1: applying deletions...\n\nChanges applied:\nUpdated file (modules/class members/top-level): /var/folders/_x/q977j71j19g931x4xkqt_ych0000gn/T/dartd_prog_generic_extension_unusedvaL51H/lib/result.dart\nFix completed.\n\nstderr:\n\n","stackTrace":"package:matcher               expect\ntest/fix_e2e_test.dart 141:7  main.<fn>.<fn>\n","isFailure":true,"type":"error","time":28062}
+{"testID":13,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":28062}
+{"test":{"id":14,"name":"dartd fix e2e deletes unused function with named parameters","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":144,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":28062}
+{"testID":14,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":30788}
+{"test":{"id":15,"name":"dartd fix e2e deletes unused subclass with named ctor and super.key","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":155,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":30788}
+{"testID":15,"error":"Expected: false\n  Actual: <true>\nexitCode: 0\nstdout:\nAnalyzing project under: /var/folders/_x/q977j71j19g931x4xkqt_ych0000gn/T/dartd_prog_subclass_named_ctor_unuseddGpZfW/lib\nIteration 1: applying deletions...\n\nChanges applied:\nUpdated file (modules/class members/top-level): /var/folders/_x/q977j71j19g931x4xkqt_ych0000gn/T/dartd_prog_subclass_named_ctor_unuseddGpZfW/lib/add_playlist_bottom_sheet.dart\nFix completed.\n\nstderr:\n\n","stackTrace":"package:matcher               expect\ntest/fix_e2e_test.dart 164:7  main.<fn>.<fn>\n","isFailure":true,"type":"error","time":33520}
+{"testID":15,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":33520}
+{"test":{"id":16,"name":"dartd fix e2e deletes unused abstract generic interfaces","suiteID":0,"groupIDs":[2,3],"metadata":{"skip":false,"skipReason":null},"line":167,"column":5,"url":"file:///Users/hari/proj/dartd/test/fix_e2e_test.dart"},"type":"testStart","time":33520}
+{"testID":16,"error":"Expected: false\n  Actual: <true>\nexitCode: 0\nstdout:\nAnalyzing project under: /var/folders/_x/q977j71j19g931x4xkqt_ych0000gn/T/dartd_prog_abstract_generic_unusedC4wqLo/lib\nNo unused declarations matched the remove options. Nothing to fix.\nFix completed.\n\nstderr:\n\n","stackTrace":"package:matcher               expect\ntest/fix_e2e_test.dart 175:7  main.<fn>.<fn>\n","isFailure":true,"type":"error","time":36190}
+{"testID":16,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":36190}
+{"success":false,"type":"done","time":36197}

@@ -8,5 +8,5 @@ class Lifecycle {
 
 void main() {
   Lifecycle().init();
-  // SecondaryLifecycle is unused.
+  // Nothing else is referenced.
 }

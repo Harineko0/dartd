@@ -11,5 +11,5 @@ class ApiClient {
 
 void main() {
   ApiClient(baseUrl: 'https://example.com');
-  // LoggingClient is unused.
+  // Nothing else is referenced.
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dartd/src/commands.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -181,6 +182,20 @@ void main() {
       final generatedContent = await _readFile(projectDir, 'lib/main.g.dart');
       expect(mainContent, isNot(contains('unusedCounter')));
       expect(generatedContent, contains('unusedCounterProvider'));
+    });
+
+    test('removes unused riverpod class providers', () async {
+      final projectDir = await _copyFixture('class_provider', 'unused');
+      addTearDown(() => projectDir.delete(recursive: true));
+
+      final result = await _runFix(projectDir.path);
+      _expectSuccess(result);
+
+      final mainContent = await _readFile(projectDir, 'lib/main.dart');
+      expect(mainContent, isNot(contains('ClassProvider')));
+
+      final generatedContent = await _readFile(projectDir, 'lib/main.g.dart');
+      expect(generatedContent, contains('classProviderProvider'));
     });
 
     test('removes unused freezed classes', () async {
@@ -384,6 +399,19 @@ void main() {
       expect(generatedContent, contains('greetingProvider'));
     });
 
+    test('keeps riverpod class providers that are read', () async {
+      final projectDir = await _copyFixture('class_provider', 'used');
+      addTearDown(() => projectDir.delete(recursive: true));
+
+      final result = await _runFix(projectDir.path);
+      _expectSuccess(result);
+
+      final mainContent = await _readFile(projectDir, 'lib/main.dart');
+      final generatedContent = await _readFile(projectDir, 'lib/main.g.dart');
+      expect(mainContent, contains('ClassProvider'));
+      expect(generatedContent, contains('classProviderProvider'));
+    });
+
     test('keeps freezed classes that are constructed', () async {
       final projectDir = await _copyFixture('freezed', 'used');
       addTearDown(() => projectDir.delete(recursive: true));
@@ -423,12 +451,9 @@ Future<void> _copyDirectory(Directory source, Directory destination) async {
   }
 }
 
-Future<ProcessResult> _runFix(String rootPath) {
-  return Process.run(
-    'dart',
-    ['run', 'bin/dartd.dart', 'fix', '--root', rootPath],
-    workingDirectory: Directory.current.path,
-  );
+Future<int> _runFix(String rootPath) async {
+  await runFixCommand(rootPath);
+  return 0;
 }
 
 Future<String> _readFile(Directory projectDir, String relativePath) async {
@@ -448,10 +473,6 @@ Future<String?> _readFileIfExists(
   return file.readAsString();
 }
 
-void _expectSuccess(ProcessResult result) {
-  expect(
-    result.exitCode,
-    0,
-    reason: 'stdout: ${result.stdout}\nstderr: ${result.stderr}',
-  );
+void _expectSuccess(int exitCode) {
+  expect(exitCode, 0);
 }

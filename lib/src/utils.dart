@@ -34,6 +34,20 @@ String baseNameFromProviderName(String name) {
   return name;
 }
 
+/// Normalize a provider base name to lowerCamel to align class and variable
+/// provider shapes (e.g. ClassProvider -> classProvider).
+String normalizedBaseName(String name) {
+  final base = baseNameFromProviderName(name);
+  if (base.isEmpty) return base;
+  return base[0].toLowerCase() + base.substring(1);
+}
+
+/// Lowercase the first character (if present).
+String toLowerCamel(String name) {
+  if (name.isEmpty) return name;
+  return name[0].toLowerCase() + name.substring(1);
+}
+
 /// Decide if an annotation is a "@riverpod" annotation.
 ///
 /// This checks the simple name, so it works for both:

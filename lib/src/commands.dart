@@ -17,7 +17,7 @@ Future<void> runAnalyzeCommand(String rootPath) async {
   );
   final unusedTopLevel = computeUnusedTopLevelDeclarations(
     analysis.topLevelDeclarations,
-    analysis.usedNamesFromAllFiles,
+    analysis.usedNamesByFile,
   );
 
   if (unusedClassMembers.isNotEmpty) {
@@ -111,7 +111,7 @@ Future<void> runFixCommand(
     );
     final unusedTopLevel = computeUnusedTopLevelDeclarations(
       analysis.topLevelDeclarations,
-      analysis.usedNamesFromAllFiles,
+      analysis.usedNamesByFile,
     );
 
     final modulesToDeleteByFile = <String, List<ModuleDefinition>>{};

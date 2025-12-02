@@ -9,5 +9,5 @@ class Box<T> {
 }
 
 void main() {
-  // Box and SpareBox are unused.
+  // Nothing in this file is referenced.
 }

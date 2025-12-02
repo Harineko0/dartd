@@ -5,5 +5,5 @@ class UnreachableUtility {
 }
 
 void main() {
-  // Neither UnreachableUtility nor UnreachableUtilityOnOtherFile are used.
+  // Nothing in this file is referenced.
 }

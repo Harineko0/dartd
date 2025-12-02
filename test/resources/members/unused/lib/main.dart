@@ -4,12 +4,12 @@ class Credentials {
   final String username;
   final String password;
 
-  Credentials({required this.username, required this.password});
+  Credentials({required this.username, this.password = 'unused'});
 
   String label() => username;
 }
 
 void main() {
-  Credentials(username: 'dash', password: 'secret').label();
-  // Profile is unused.
+  Credentials(username: 'dash').label();
+  // Nothing else is referenced.
 }

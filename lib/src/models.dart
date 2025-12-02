@@ -52,7 +52,14 @@ enum ClassMemberKind { method, getter, setter, field }
 enum ModuleDeclarationKind { providerClass, riverpodFunction, providerVariable }
 
 /// Kind of deletable top-level declaration.
-enum TopLevelDeclarationKind { function }
+enum TopLevelDeclarationKind {
+  function,
+  variable,
+  classType,
+  enumType,
+  extension,
+  typeAlias,
+}
 
 class OffsetRange {
   final int start;
@@ -103,6 +110,7 @@ class TopLevelDeclaration {
   final int start;
   final int end;
   final TopLevelDeclarationKind kind;
+  final Set<String> requiredNames;
 
   TopLevelDeclaration({
     required this.name,
@@ -110,15 +118,24 @@ class TopLevelDeclaration {
     required this.start,
     required this.end,
     required this.kind,
-  });
+    Set<String>? requiredNames,
+  }) : requiredNames = requiredNames ?? {name};
 
   @override
   String toString() {
     final label = switch (kind) {
       TopLevelDeclarationKind.function => 'function',
+      TopLevelDeclarationKind.variable => 'variable',
+      TopLevelDeclarationKind.classType => 'class',
+      TopLevelDeclarationKind.enumType => 'enum',
+      TopLevelDeclarationKind.extension => 'extension',
+      TopLevelDeclarationKind.typeAlias => 'type alias',
     };
     return '$label "$name" in $filePath';
   }
+
+  Set<String> get namesForUsageCheck =>
+      requiredNames.isNotEmpty ? requiredNames : {name};
 }
 
 /// Result of analyzing the project.

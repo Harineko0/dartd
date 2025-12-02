@@ -179,6 +179,7 @@ class ProjectAnalyzer {
           filePath: filePath,
           groupsByBaseName: groupsByBaseName,
           nonModuleNames: nonModuleNames,
+          topLevelDeclarations: topLevelDeclarations,
           onModuleFound: () => hasModuleInFile = true,
         );
       } else if (decl is ClassDeclaration) {
@@ -189,15 +190,49 @@ class ProjectAnalyzer {
           groupsByBaseName: groupsByBaseName,
           nonModuleNames: nonModuleNames,
           classMembers: classMembers,
+          topLevelDeclarations: topLevelDeclarations,
           onModuleFound: () => hasModuleInFile = true,
         );
       } else if (decl is EnumDeclaration) {
+        topLevelDeclarations.add(
+          TopLevelDeclaration(
+            name: decl.name.lexeme,
+            filePath: filePath,
+            start: decl.offset,
+            end: decl.end,
+            kind: TopLevelDeclarationKind.enumType,
+          ),
+        );
         nonModuleNames.add(decl.name.lexeme);
       } else if (decl is GenericTypeAlias) {
-        nonModuleNames.add(decl.name.lexeme);
+        final name = decl.name.lexeme;
+        topLevelDeclarations.add(
+          TopLevelDeclaration(
+            name: name,
+            filePath: filePath,
+            start: decl.offset,
+            end: decl.end,
+            kind: TopLevelDeclarationKind.typeAlias,
+          ),
+        );
+        nonModuleNames.add(name);
+      } else if (decl is TypeAlias) {
+        final name = decl.name.lexeme;
+        topLevelDeclarations.add(
+          TopLevelDeclaration(
+            name: name,
+            filePath: filePath,
+            start: decl.offset,
+            end: decl.end,
+            kind: TopLevelDeclarationKind.typeAlias,
+          ),
+        );
+        nonModuleNames.add(name);
       } else if (decl is ExtensionDeclaration) {
         _handleExtensionDeclaration(
           decl: decl,
+          filePath: filePath,
+          topLevelDeclarations: topLevelDeclarations,
           nonModuleNames: nonModuleNames,
         );
       }
@@ -223,8 +258,9 @@ class ProjectAnalyzer {
 
     if (isRiverpod) {
       onModuleFound();
+      final baseName = normalizedBaseName(name);
       final module = ModuleDefinition(
-        baseName: name,
+        baseName: baseName,
         name: name,
         filePath: filePath,
         start: decl.offset,
@@ -255,13 +291,14 @@ class ProjectAnalyzer {
     required String filePath,
     required Map<String, List<ModuleDefinition>> groupsByBaseName,
     required Set<String> nonModuleNames,
+    required List<TopLevelDeclaration> topLevelDeclarations,
     required void Function() onModuleFound,
   }) {
     for (final variable in decl.variables.variables) {
       final name = variable.name.lexeme;
       if (name.endsWith(providerSuffix)) {
         onModuleFound();
-        final baseName = baseNameFromProviderName(name);
+        final baseName = normalizedBaseName(name);
         final module = ModuleDefinition(
           baseName: baseName,
           name: name,
@@ -277,6 +314,15 @@ class ProjectAnalyzer {
             .add(module);
       } else {
         nonModuleNames.add(name);
+        topLevelDeclarations.add(
+          TopLevelDeclaration(
+            name: name,
+            filePath: filePath,
+            start: decl.offset,
+            end: decl.end,
+            kind: TopLevelDeclarationKind.variable,
+          ),
+        );
       }
     }
   }
@@ -288,12 +334,13 @@ class ProjectAnalyzer {
     required Map<String, List<ModuleDefinition>> groupsByBaseName,
     required Set<String> nonModuleNames,
     required List<ClassMemberDefinition> classMembers,
+    required List<TopLevelDeclaration> topLevelDeclarations,
     required void Function() onModuleFound,
   }) {
     final name = decl.name.lexeme;
     if (name.endsWith(providerSuffix)) {
       onModuleFound();
-      final baseName = baseNameFromProviderName(name);
+      final baseName = toLowerCamel(name);
       final module = ModuleDefinition(
         baseName: baseName,
         name: name,
@@ -309,6 +356,15 @@ class ProjectAnalyzer {
           .add(module);
     } else {
       nonModuleNames.add(name);
+      topLevelDeclarations.add(
+        TopLevelDeclaration(
+          name: name,
+          filePath: filePath,
+          start: decl.offset,
+          end: decl.end,
+          kind: TopLevelDeclarationKind.classType,
+        ),
+      );
       _collectClassMembers(
         decl: decl,
         filePath: filePath,
@@ -320,23 +376,42 @@ class ProjectAnalyzer {
 
   void _handleExtensionDeclaration({
     required ExtensionDeclaration decl,
+    required String filePath,
+    required List<TopLevelDeclaration> topLevelDeclarations,
     required Set<String> nonModuleNames,
   }) {
+    final requiredNames = <String>{};
     if (decl.name != null) {
-      nonModuleNames.add(decl.name!.lexeme);
+      final name = decl.name!.lexeme;
+      nonModuleNames.add(name);
+      requiredNames.add(name);
     }
 
     for (final member in decl.members) {
       if (member is MethodDeclaration) {
         if (member.name.lexeme.isNotEmpty) {
           nonModuleNames.add(member.name.lexeme);
+          requiredNames.add(member.name.lexeme);
         }
       } else if (member is FieldDeclaration) {
         for (final v in member.fields.variables) {
           nonModuleNames.add(v.name.lexeme);
+          requiredNames.add(v.name.lexeme);
         }
       }
     }
+
+    final extensionName = decl.name?.lexeme ?? '<extension>';
+    topLevelDeclarations.add(
+      TopLevelDeclaration(
+        name: extensionName,
+        filePath: filePath,
+        start: decl.offset,
+        end: decl.end,
+        kind: TopLevelDeclarationKind.extension,
+        requiredNames: requiredNames,
+      ),
+    );
   }
 
   void _collectClassMembers({
@@ -631,6 +706,12 @@ Set<String> computeDeletableNonModuleFiles(ProjectAnalysis analysis) {
             );
 
     if (!isUsedElsewhere) {
+      final content = File(filePath).readAsStringSync();
+      if (RegExp(r'\bpart\b').hasMatch(content)) {
+        // Preserve files that declare part files; these typically pair with
+        // generated code and may be expected to remain even when empty.
+        continue;
+      }
       deletable.add(filePath);
     }
   }
@@ -722,7 +803,8 @@ void applyCombinedFixes({
 String _applyTextRemovals(String content, List<_TextRemoval> removals) {
   if (removals.isEmpty) return content;
 
-  final sorted = removals.toList()
+  final merged = _mergeRemovals(removals);
+  final sorted = merged.toList()
     ..sort((a, b) => b.start.compareTo(a.start)); // Delete from bottom
 
   var updated = content;
@@ -793,6 +875,28 @@ class _TextRemoval {
   _TextRemoval(this.start, this.end);
 }
 
+List<_TextRemoval> _mergeRemovals(List<_TextRemoval> removals) {
+  if (removals.isEmpty) return removals;
+
+  final sorted = removals.toList()..sort((a, b) => a.start.compareTo(b.start));
+
+  final merged = <_TextRemoval>[];
+  var current = sorted.first;
+
+  for (final removal in sorted.skip(1)) {
+    if (removal.start <= current.end) {
+      final newEnd = removal.end > current.end ? removal.end : current.end;
+      current = _TextRemoval(current.start, newEnd);
+    } else {
+      merged.add(current);
+      current = removal;
+    }
+  }
+
+  merged.add(current);
+  return merged;
+}
+
 /// Compute unused class members (methods/getters/setters).
 ///
 /// This uses names from all files, including generated ones, to avoid deleting
@@ -815,16 +919,28 @@ List<ClassMemberDefinition> computeUnusedClassMembers(
 /// Compute unused top-level declarations such as free functions.
 List<TopLevelDeclaration> computeUnusedTopLevelDeclarations(
   List<TopLevelDeclaration> declarations,
-  Set<String> usedNamesFromAllFiles,
+  Map<String, Set<String>> usedNamesByFile,
 ) {
   final unused = <TopLevelDeclaration>[];
 
   for (final declaration in declarations) {
-    if (declaration.name == 'main') {
+    if (declaration.kind == TopLevelDeclarationKind.function &&
+        declaration.name == 'main') {
       // Preserve executable entrypoints even if they are not referenced.
       continue;
     }
-    if (!usedNamesFromAllFiles.contains(declaration.name)) {
+    final names = declaration.namesForUsageCheck;
+    final usedInOtherFiles = usedNamesByFile.entries
+        .where((entry) =>
+            entry.key != declaration.filePath && !isGeneratedFile(entry.key))
+        .any((entry) => entry.value.any(names.contains));
+
+    final usedInSameFile =
+        usedNamesByFile[declaration.filePath]?.any(names.contains) ?? false;
+
+    final isUsed = usedInOtherFiles || usedInSameFile;
+
+    if (!isUsed) {
       unused.add(declaration);
     }
   }

@@ -5,5 +5,5 @@ abstract class BackgroundTask {
 }
 
 void main() {
-  // BackgroundTask and DetachedJob remain unused.
+  // Nothing in this file is referenced.
 }

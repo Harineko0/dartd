@@ -86,18 +86,34 @@ Future<void> runAnalyzeCommand(String rootPath) async {
 
 /// Entry point for `fix` command.
 /// Removes unused declarations matching [removalTargets] and deletes empty
-/// module files when file removals are enabled.
+/// module files when file removals are enabled. Iterations can be capped via
+/// [maxIterations]; defaults to running until no changes remain.
 Future<void> runFixCommand(
   String rootPath, {
   RemovalTargets removalTargets = const RemovalTargets.all(),
+  int? maxIterations,
 }) async {
+  if (maxIterations != null && maxIterations < 1) {
+    throw ArgumentError.value(
+      maxIterations,
+      'maxIterations',
+      'must be at least 1',
+    );
+  }
+
   print('Analyzing project under: $rootPath');
 
   var iteration = 1;
   var hasAppliedFix = false;
   final changeLogs = <String>[];
+  var reachedIterationLimit = false;
 
   while (true) {
+    if (maxIterations != null && iteration > maxIterations) {
+      reachedIterationLimit = true;
+      break;
+    }
+
     final analysis = await analyzeProject(rootPath);
 
     final unusedClassMembers = computeUnusedClassMembers(
@@ -193,6 +209,13 @@ Future<void> runFixCommand(
     }
 
     iteration++;
+  }
+
+  if (reachedIterationLimit) {
+    print(
+      'Reached iteration limit ($maxIterations). Run dartd fix again to '
+      'continue.',
+    );
   }
 
   if (changeLogs.isNotEmpty) {

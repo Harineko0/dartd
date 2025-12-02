@@ -182,6 +182,32 @@ void main() {
       expect(additional ?? '', isNot(contains('unseenHelper')));
     });
 
+    test('respects iteration limit when fixing chained usages', () async {
+      final projectDir = await _copyFixture('iteration_limit', 'unused');
+      addTearDown(() => projectDir.delete(recursive: true));
+
+      final firstPass = await _runFix(projectDir.path, maxIterations: 1);
+      _expectSuccess(firstPass);
+
+      final contentAfterFirst = await _readFile(projectDir, 'lib/main.dart');
+      expect(contentAfterFirst, isNot(contains('unusedEntry')));
+      expect(contentAfterFirst, contains('helper'));
+      expect(contentAfterFirst, contains('secondary'));
+
+      final secondPass = await _runFix(projectDir.path);
+      _expectSuccess(secondPass);
+
+      final mainFile = File(p.join(projectDir.path, 'lib', 'main.dart'));
+      if (mainFile.existsSync()) {
+        final contentAfterSecond = await mainFile.readAsString();
+        expect(contentAfterSecond, isNot(contains('helper')));
+        expect(contentAfterSecond, isNot(contains('secondary')));
+      } else {
+        // File can be deleted when empty after the final pass.
+        expect(mainFile.existsSync(), isFalse);
+      }
+    });
+
     test('removes unused riverpod providers even with generated stubs',
         () async {
       final projectDir = await _copyFixture('riverpod_generator', 'unused');
@@ -476,8 +502,8 @@ Future<void> _copyDirectory(Directory source, Directory destination) async {
   }
 }
 
-Future<int> _runFix(String rootPath) async {
-  await runFixCommand(rootPath);
+Future<int> _runFix(String rootPath, {int? maxIterations}) async {
+  await runFixCommand(rootPath, maxIterations: maxIterations);
   return 0;
 }
 

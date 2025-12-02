@@ -57,9 +57,20 @@ Future<int> _runCli(List<String> args) async {
       final removalTargets = RemovalTargets.fromNames(
         (command['remove'] as List<Object?>?)?.cast<String>() ?? const ['all'],
       );
+      final iterationOption = command['iteration'] as String?;
+      final maxIterations =
+          iterationOption == null ? null : int.tryParse(iterationOption);
+
+      if (iterationOption != null &&
+          (maxIterations == null || maxIterations < 1)) {
+        stderr.writeln('Iteration must be a positive integer.');
+        return _exitCodeUsage;
+      }
+
       await runFixCommand(
         rootPath,
         removalTargets: removalTargets,
+        maxIterations: maxIterations,
       );
       return 0;
     default:
@@ -84,6 +95,11 @@ ArgParser _buildArgParser() {
       abbr: 'r',
       defaultsTo: 'lib',
       help: 'Root directory to analyze and fix.',
+    )
+    ..addOption(
+      'iteration',
+      valueHelp: 'count',
+      help: 'Maximum number of fix iterations to perform.',
     )
     ..addMultiOption(
       'remove',
@@ -119,7 +135,7 @@ dartd - A tool to analyze and remove unused Dart declarations.
 
 Usage:
   dartd analyze --root lib
-  dartd fix --root lib [--remove all|file|class|function|var|method|member]
+  dartd fix --root lib [--iteration count] [--remove all|file|class|function|var|method|member]
 
 Commands:
   analyze   Analyze unused declarations.

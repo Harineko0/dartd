@@ -21,6 +21,7 @@ class DataClass {
 
 void main() {
   final container = ProviderContainer();
-  final state = container.read(classProviderProvider.select((DataClass value) => value.name));
+  final state = container
+      .read(classProviderProvider.select((DataClass value) => value.name));
   print(state);
 }

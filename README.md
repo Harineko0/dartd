@@ -19,6 +19,7 @@ Dead-code sweeper for Dart and Flutter projects. Scan for unused modules (files,
 - `dartd analyze --root <path>` — scan for unused modules and declarations (defaults to the current directory).
 - `dartd fix --root <path>` — remove unused modules, class members (methods/getters/setters/fields), and delete empty Dart files under `lib/` (dry-run to preview).
 - `dartd fix --remove method` — narrow removals (`file`, `class`, `function`, `var`, `method`, `member`; default: `all`).
+- `dartd fix --iteration <count>` — cap how many fix passes run before stopping (rerun to continue).
 - `dartd analyze --root packages/feature/lib` — target a specific package or feature folder.
 - `dartd fix --root packages/feature/lib` — apply fixes to a different root.
 

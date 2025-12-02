@@ -26,6 +26,7 @@ class ProjectAnalyzer {
 
     final groupsByBaseName = <String, List<ModuleDefinition>>{};
     final filesWithModules = <String>{};
+    final partOfByFile = <String, String?>{};
 
     final usedNamesFromUserCode = <String>{};
     final usedNamesFromAllFiles = <String>{};
@@ -46,6 +47,7 @@ class ProjectAnalyzer {
         nonModuleDeclarationsByFile: nonModuleDeclarationsByFile,
         classMembers: classMembers,
         topLevelDeclarations: topLevelDeclarations,
+        partOfByFile: partOfByFile,
       );
     }
 
@@ -64,6 +66,7 @@ class ProjectAnalyzer {
       nonModuleDeclarationsByFile: nonModuleDeclarationsByFile,
       classMembers: classMembers,
       topLevelDeclarations: topLevelDeclarations,
+      partOfByFile: partOfByFile,
     );
   }
 
@@ -100,6 +103,7 @@ class ProjectAnalyzer {
     required Map<String, Set<String>> nonModuleDeclarationsByFile,
     required List<ClassMemberDefinition> classMembers,
     required List<TopLevelDeclaration> topLevelDeclarations,
+    required Map<String, String?> partOfByFile,
   }) async {
     final parsed = await _parseCompilationUnit(filePath);
     if (parsed == null) return;
@@ -114,6 +118,21 @@ class ProjectAnalyzer {
     usedNamesByFile[filePath] = usedNamesInFile;
     usedNamesFromAllFiles.addAll(usedNamesInFile);
     if (!isGenerated) usedNamesFromUserCode.addAll(usedNamesInFile);
+
+    String? partOfLibrary;
+    for (final directive in unit.directives) {
+      if (directive is PartOfDirective) {
+        final uri = directive.uri;
+        if (uri is StringLiteral) {
+          final libraryPath = uri.stringValue;
+          if (libraryPath != null) {
+            partOfLibrary =
+                p.normalize(p.join(p.dirname(filePath), libraryPath));
+          }
+        }
+      }
+    }
+    partOfByFile[filePath] = partOfLibrary;
 
     // 3) Collect module definitions and non-module top level declarations.
     final nonModuleNames = _collectDeclarationsAndModules(
@@ -920,6 +939,7 @@ List<ClassMemberDefinition> computeUnusedClassMembers(
 List<TopLevelDeclaration> computeUnusedTopLevelDeclarations(
   List<TopLevelDeclaration> declarations,
   Map<String, Set<String>> usedNamesByFile,
+  Map<String, String?> partOfByFile,
 ) {
   final unused = <TopLevelDeclaration>[];
 
@@ -930,10 +950,16 @@ List<TopLevelDeclaration> computeUnusedTopLevelDeclarations(
       continue;
     }
     final names = declaration.namesForUsageCheck;
-    final usedInOtherFiles = usedNamesByFile.entries
-        .where((entry) =>
-            entry.key != declaration.filePath && !isGeneratedFile(entry.key))
-        .any((entry) => entry.value.any(names.contains));
+    final usedInOtherFiles = usedNamesByFile.entries.where((entry) {
+      if (entry.key == declaration.filePath) return false;
+
+      final partOfLibrary = partOfByFile[entry.key];
+      final isSameLibraryPart = partOfLibrary != null &&
+          p.equals(p.normalize(partOfLibrary), declaration.filePath) &&
+          isGeneratedFile(entry.key);
+
+      return !isSameLibraryPart;
+    }).any((entry) => entry.value.any(names.contains));
 
     final usedInSameFile =
         usedNamesByFile[declaration.filePath]?.any(names.contains) ?? false;

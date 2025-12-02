@@ -171,6 +171,10 @@ class ProjectAnalysis {
   /// Collected top-level declarations that can be evaluated for removal.
   final List<TopLevelDeclaration> topLevelDeclarations;
 
+  /// Map of file path to the resolved library file when the file is declared
+  /// as a part of another library.
+  final Map<String, String?> partOfByFile;
+
   ProjectAnalysis({
     required this.groupsByBaseName,
     required this.usedNamesFromUserCode,
@@ -181,5 +185,6 @@ class ProjectAnalysis {
     required this.nonModuleDeclarationsByFile,
     required this.classMembers,
     required this.topLevelDeclarations,
+    required this.partOfByFile,
   });
 }

@@ -129,6 +129,11 @@ class ProjectAnalysis {
   /// This is used only for deciding whether a module group is unused.
   final Set<String> usedNamesFromUserCode;
 
+  /// Used names per file (including generated files).
+  /// This is used for determining cross-file usages so we can delete
+  /// files that are only self-referential.
+  final Map<String, Set<String>> usedNamesByFile;
+
   /// Used names from all Dart files (including generated files).
   /// This is used for deciding whether a file containing non-module
   /// declarations can be safely deleted.
@@ -152,6 +157,7 @@ class ProjectAnalysis {
   ProjectAnalysis({
     required this.groupsByBaseName,
     required this.usedNamesFromUserCode,
+    required this.usedNamesByFile,
     required this.usedNamesFromAllFiles,
     required this.filesWithModules,
     required this.allDartFiles,

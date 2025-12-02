@@ -29,6 +29,7 @@ class ProjectAnalyzer {
 
     final usedNamesFromUserCode = <String>{};
     final usedNamesFromAllFiles = <String>{};
+    final usedNamesByFile = <String, Set<String>>{};
 
     final nonModuleDeclarationsByFile = <String, Set<String>>{};
     final classMembers = <ClassMemberDefinition>[];
@@ -41,6 +42,7 @@ class ProjectAnalyzer {
         filesWithModules: filesWithModules,
         usedNamesFromUserCode: usedNamesFromUserCode,
         usedNamesFromAllFiles: usedNamesFromAllFiles,
+        usedNamesByFile: usedNamesByFile,
         nonModuleDeclarationsByFile: nonModuleDeclarationsByFile,
         classMembers: classMembers,
         topLevelDeclarations: topLevelDeclarations,
@@ -56,6 +58,7 @@ class ProjectAnalyzer {
       groupsByBaseName: groups,
       usedNamesFromUserCode: usedNamesFromUserCode,
       usedNamesFromAllFiles: usedNamesFromAllFiles,
+      usedNamesByFile: usedNamesByFile,
       filesWithModules: filesWithModules,
       allDartFiles: allFiles,
       nonModuleDeclarationsByFile: nonModuleDeclarationsByFile,
@@ -93,6 +96,7 @@ class ProjectAnalyzer {
     required Set<String> filesWithModules,
     required Set<String> usedNamesFromUserCode,
     required Set<String> usedNamesFromAllFiles,
+    required Map<String, Set<String>> usedNamesByFile,
     required Map<String, Set<String>> nonModuleDeclarationsByFile,
     required List<ClassMemberDefinition> classMembers,
     required List<TopLevelDeclaration> topLevelDeclarations,
@@ -105,13 +109,11 @@ class ProjectAnalyzer {
 
     final isGenerated = isGeneratedFile(filePath);
 
-    // 1) Collect used symbol names from ALL files.
-    _collectUsedNames(unit, usedNamesFromAllFiles);
-
-    // 2) Collect used symbol names from non-generated user code only.
-    if (!isGenerated) {
-      _collectUsedNames(unit, usedNamesFromUserCode);
-    }
+    // 1) Collect used symbol names.
+    final usedNamesInFile = _collectUsedNames(unit);
+    usedNamesByFile[filePath] = usedNamesInFile;
+    usedNamesFromAllFiles.addAll(usedNamesInFile);
+    if (!isGenerated) usedNamesFromUserCode.addAll(usedNamesInFile);
 
     // 3) Collect module definitions and non-module top level declarations.
     final nonModuleNames = _collectDeclarationsAndModules(
@@ -142,9 +144,11 @@ class ProjectAnalyzer {
     return _ParsedUnit(parseResult.unit, content);
   }
 
-  void _collectUsedNames(CompilationUnit unit, Set<String> target) {
-    final visitor = UsedNamesVisitor(target);
+  Set<String> _collectUsedNames(CompilationUnit unit) {
+    final names = <String>{};
+    final visitor = UsedNamesVisitor(names);
     unit.accept(visitor);
+    return names;
   }
 
   Set<String> _collectDeclarationsAndModules({
@@ -399,20 +403,9 @@ List<ModuleGroup> computeUnusedGroups(
   final unused = <ModuleGroup>[];
 
   for (final group in groupsByBaseName.values) {
-    var isUsed = false;
-
-    // If the base name is used directly, the whole group is used.
-    if (usedNamesFromUserCode.contains(group.baseName)) {
-      isUsed = true;
-    } else {
-      // If any member is used, the whole group is used.
-      for (final member in group.members) {
-        if (usedNamesFromUserCode.contains(member.name)) {
-          isUsed = true;
-          break;
-        }
-      }
-    }
+    final isUsed = group.members.any(
+      (member) => usedNamesFromUserCode.contains(member.name),
+    );
 
     if (!isUsed) {
       unused.add(group);
@@ -609,6 +602,7 @@ bool _isWhitespace(int charCode) {
 ///   anywhere in the project (including generated files).
 Set<String> computeDeletableNonModuleFiles(ProjectAnalysis analysis) {
   final deletable = <String>{};
+  final usedNamesByFile = analysis.usedNamesByFile;
 
   for (final filePath in analysis.allDartFiles) {
     if (isGeneratedFile(filePath)) {
@@ -629,11 +623,14 @@ Set<String> computeDeletableNonModuleFiles(ProjectAnalysis analysis) {
     final declared =
         analysis.nonModuleDeclarationsByFile[filePath] ?? const <String>{};
 
-    // If any non-module declaration is used anywhere (including generated
-    // files), this file should not be deleted.
-    final isUsed = declared.any(analysis.usedNamesFromAllFiles.contains);
+    // If any non-module declaration is used from another file (including
+    // generated files), this file should not be deleted.
+    final isUsedElsewhere =
+        usedNamesByFile.entries.where((entry) => entry.key != filePath).any(
+              (entry) => entry.value.any(declared.contains),
+            );
 
-    if (!isUsed) {
+    if (!isUsedElsewhere) {
       deletable.add(filePath);
     }
   }

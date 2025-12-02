@@ -1,0 +1,3 @@
+class UnreachableUtilityOnOtherFile {
+  void call() {}
+}

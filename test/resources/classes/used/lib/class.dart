@@ -1,0 +1,3 @@
+class VisibleUtilityOnOtherFile {
+  void call() {}
+}

@@ -1,0 +1,3 @@
+class SecondaryLifecycle {
+  void synchronize() {}
+}

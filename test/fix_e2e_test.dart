@@ -10,19 +10,35 @@ void main() {
     test(
       'removes unused provider even when base name is used elsewhere',
       () async {
-        final programDir =
-            await _copyProgramToTemp('provider_masked_by_model', projectRoot);
+        final programDir = await _copyProgramToTemp('provider_masked_by_model', projectRoot);
 
         final result = await _runFix(projectRoot, programDir);
         _expectSuccess(result);
 
-        final providerFile =
-            File(p.join(programDir.path, 'lib', 'user_provider.dart'));
+        final providerFile = File(p.join(programDir.path, 'lib', 'user_provider.dart'));
         expect(
           providerFile.existsSync(),
           isFalse,
           reason: _cliDebug(result),
         );
+      },
+    );
+
+    test(
+      'removes unused class while keeping used class',
+      () async {
+        final programDir = await _copyProgramToTemp('unused_class', projectRoot);
+
+        final result = await _runFix(projectRoot, programDir);
+        _expectSuccess(result);
+
+        // confirm that the file containing the unused class is deleted
+        final exceptionFile = File(p.join(programDir.path, 'lib', 'exception.dart'));
+        final isFileExist = exceptionFile.existsSync();
+        final isFileContainsUnusedClass = isFileExist && exceptionFile.readAsStringSync().contains('class UnusedClass');
+
+        expect(isFileExist, isTrue, reason: _cliDebug(result));
+        expect(isFileContainsUnusedClass, isFalse, reason: _cliDebug(result));
       },
     );
 
@@ -45,8 +61,7 @@ void main() {
     });
 
     test('deletes files that only contain unused helpers', () async {
-      final programDir =
-          await _copyProgramToTemp('unused_helpers', projectRoot);
+      final programDir = await _copyProgramToTemp('unused_helpers', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -59,8 +74,7 @@ void main() {
     });
 
     test('deletes unused extension files', () async {
-      final programDir =
-          await _copyProgramToTemp('extension_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('extension_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -70,8 +84,7 @@ void main() {
     });
 
     test('deletes unused class with only a constructor', () async {
-      final programDir =
-          await _copyProgramToTemp('class_constructor_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('class_constructor_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -81,8 +94,7 @@ void main() {
     });
 
     test('deletes unused class with named parameter constructor', () async {
-      final programDir =
-          await _copyProgramToTemp('named_constructor_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('named_constructor_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -92,8 +104,7 @@ void main() {
     });
 
     test('removes unused getter/setter members', () async {
-      final programDir =
-          await _copyProgramToTemp('getter_setter_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('getter_setter_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -109,8 +120,7 @@ void main() {
     });
 
     test('removes unused riverpod modules', () async {
-      final programDir =
-          await _copyProgramToTemp('riverpod_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('riverpod_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -120,8 +130,7 @@ void main() {
     });
 
     test('deletes unused generic function definitions', () async {
-      final programDir =
-          await _copyProgramToTemp('generic_function_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('generic_function_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -131,8 +140,7 @@ void main() {
     });
 
     test('deletes unused generic extensions', () async {
-      final programDir =
-          await _copyProgramToTemp('generic_extension_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('generic_extension_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -142,8 +150,7 @@ void main() {
     });
 
     test('deletes unused function with named parameters', () async {
-      final programDir =
-          await _copyProgramToTemp('named_param_function_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('named_param_function_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -153,20 +160,17 @@ void main() {
     });
 
     test('deletes unused subclass with named ctor and super.key', () async {
-      final programDir =
-          await _copyProgramToTemp('subclass_named_ctor_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('subclass_named_ctor_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
 
-      final file = File(
-          p.join(programDir.path, 'lib', 'add_playlist_bottom_sheet.dart'));
+      final file = File(p.join(programDir.path, 'lib', 'add_playlist_bottom_sheet.dart'));
       expect(file.existsSync(), isFalse, reason: _cliDebug(result));
     });
 
     test('deletes unused abstract generic interfaces', () async {
-      final programDir =
-          await _copyProgramToTemp('abstract_generic_unused', projectRoot);
+      final programDir = await _copyProgramToTemp('abstract_generic_unused', projectRoot);
 
       final result = await _runFix(projectRoot, programDir);
       _expectSuccess(result);
@@ -182,8 +186,7 @@ Future<Directory> _copyProgramToTemp(
   String projectRoot,
 ) async {
   final sourceDir = Directory(p.join(projectRoot, 'test', 'prog', name));
-  expect(sourceDir.existsSync(), isTrue,
-      reason: 'Missing program fixture $name');
+  expect(sourceDir.existsSync(), isTrue, reason: 'Missing program fixture $name');
 
   final targetDir = await Directory.systemTemp.createTemp('dartd_prog_$name');
   await _copyDirectory(sourceDir, targetDir);

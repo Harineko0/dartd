@@ -1,0 +1,5 @@
+class UsedClass {
+}
+
+class UnusedClass {
+}

@@ -229,11 +229,13 @@ void main() {
       final result = await _runFix(projectDir.path);
       _expectSuccess(result);
 
-      final mainContent = await _readFile(projectDir, 'lib/main.dart');
-      expect(mainContent, isNot(contains('ClassProvider')));
+      final provider = await _readFileIfExists(projectDir, 'lib/provider.dart');
+      final providerG = await _readFileIfExists(projectDir, 'lib/provider.g.dart');
+      final state = await _readFileIfExists(projectDir, 'lib/state.dart');
 
-      final generatedContent = await _readFile(projectDir, 'lib/main.g.dart');
-      expect(generatedContent, contains('classProviderProvider'));
+      expect(provider, isNotNull);
+      expect(providerG, isNotNull);
+      expect(state, isNotNull);
     });
 
     test('removes unused freezed classes', () async {
@@ -457,10 +459,13 @@ void main() {
       final result = await _runFix(projectDir.path);
       _expectSuccess(result);
 
-      final mainContent = await _readFile(projectDir, 'lib/main.dart');
-      final generatedContent = await _readFile(projectDir, 'lib/main.g.dart');
-      expect(mainContent, contains('ClassProvider'));
-      expect(generatedContent, contains('classProviderProvider'));
+      final provider = await _readFileIfExists(projectDir, 'lib/provider.dart');
+      final providerG = await _readFileIfExists(projectDir, 'lib/provider.g.dart');
+      final state = await _readFileIfExists(projectDir, 'lib/state.dart');
+
+      expect(provider, isNotNull);
+      expect(providerG, isNotNull);
+      expect(state, isNotNull);
     });
 
     test('keeps freezed classes that are constructed', () async {

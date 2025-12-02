@@ -136,6 +136,18 @@ void main() {
       expect(profile ?? '', isNot(contains('Profile')));
     });
 
+    test('removes unused static members', () async {
+      final projectDir = await _copyFixture('static_members', 'unused');
+      addTearDown(() => projectDir.delete(recursive: true));
+
+      final result = await _runFix(projectDir.path);
+      _expectSuccess(result);
+
+      final content = await _readFile(projectDir, 'lib/main.dart');
+      expect(content, isNot(contains('unusedName')));
+      expect(content, isNot(contains('unusedLabel')));
+    });
+
     test('removes unused named parameters and fields', () async {
       final projectDir =
           await _copyFixture('named_parameter_constructors', 'unused');
@@ -349,6 +361,19 @@ void main() {
       final profile = await _readFileIfExists(projectDir, 'lib/profile.dart');
       expect(profile, isNotNull);
       expect(profile, contains('Profile'));
+    });
+
+    test('keeps referenced static members', () async {
+      final projectDir = await _copyFixture('static_members', 'used');
+      addTearDown(() => projectDir.delete(recursive: true));
+
+      final result = await _runFix(projectDir.path);
+      _expectSuccess(result);
+
+      final content = await _readFile(projectDir, 'lib/main.dart');
+      expect(content, contains('FeatureFlags'));
+      expect(content, contains('apiEndpoint'));
+      expect(content, contains('label'));
     });
 
     test('keeps named parameters that are used', () async {

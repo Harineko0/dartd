@@ -17,7 +17,7 @@ void main() {
         _expectSuccess(result);
 
         final providerFile =
-            File(p.join(programDir.path, 'lib', 'providers.dart'));
+            File(p.join(programDir.path, 'lib', 'user_provider.dart'));
         expect(
           providerFile.existsSync(),
           isFalse,
@@ -116,6 +116,62 @@ void main() {
       _expectSuccess(result);
 
       final file = File(p.join(programDir.path, 'lib', 'providers.dart'));
+      expect(file.existsSync(), isFalse, reason: _cliDebug(result));
+    });
+
+    test('deletes unused generic function definitions', () async {
+      final programDir =
+          await _copyProgramToTemp('generic_function_unused', projectRoot);
+
+      final result = await _runFix(projectRoot, programDir);
+      _expectSuccess(result);
+
+      final file = File(p.join(programDir.path, 'lib', 'ok.dart'));
+      expect(file.existsSync(), isFalse, reason: _cliDebug(result));
+    });
+
+    test('deletes unused generic extensions', () async {
+      final programDir =
+          await _copyProgramToTemp('generic_extension_unused', projectRoot);
+
+      final result = await _runFix(projectRoot, programDir);
+      _expectSuccess(result);
+
+      final file = File(p.join(programDir.path, 'lib', 'result.dart'));
+      expect(file.existsSync(), isFalse, reason: _cliDebug(result));
+    });
+
+    test('deletes unused function with named parameters', () async {
+      final programDir =
+          await _copyProgramToTemp('named_param_function_unused', projectRoot);
+
+      final result = await _runFix(projectRoot, programDir);
+      _expectSuccess(result);
+
+      final file = File(p.join(programDir.path, 'lib', 'api.dart'));
+      expect(file.existsSync(), isFalse, reason: _cliDebug(result));
+    });
+
+    test('deletes unused subclass with named ctor and super.key', () async {
+      final programDir =
+          await _copyProgramToTemp('subclass_named_ctor_unused', projectRoot);
+
+      final result = await _runFix(projectRoot, programDir);
+      _expectSuccess(result);
+
+      final file = File(
+          p.join(programDir.path, 'lib', 'add_playlist_bottom_sheet.dart'));
+      expect(file.existsSync(), isFalse, reason: _cliDebug(result));
+    });
+
+    test('deletes unused abstract generic interfaces', () async {
+      final programDir =
+          await _copyProgramToTemp('abstract_generic_unused', projectRoot);
+
+      final result = await _runFix(projectRoot, programDir);
+      _expectSuccess(result);
+
+      final file = File(p.join(programDir.path, 'lib', 'partial_updater.dart'));
       expect(file.existsSync(), isFalse, reason: _cliDebug(result));
     });
   });

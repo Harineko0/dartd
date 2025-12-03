@@ -16,6 +16,7 @@ dartd fix --root <path> [--dry-run]
 ```
 - `--root`, `-r`: project root (default: current directory)
 - `--dry-run`: show planned removals without writing files
+- `--remove`: specify what to remove (`file`, `class`, `function`, `var`, `method`, `member`, `import`, or `all`)
 
 ## Output details
 - Unused classes: listed with class name and file path.

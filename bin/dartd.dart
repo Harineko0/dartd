@@ -16,6 +16,7 @@ const _removeOptionNames = [
   'var',
   'method',
   'member',
+  'import',
 ];
 
 Future<void> main(List<String> args) async {
@@ -106,7 +107,7 @@ ArgParser _buildArgParser() {
       defaultsTo: const ['all'],
       allowed: _removeOptionNames,
       help:
-          'Kinds of unused declarations to remove (file, class, function, var, method, member, all).',
+          'Kinds of unused declarations to remove (file, class, function, var, method, member, import, all).',
       allowedHelp: const {
         'all': 'Remove all supported unused declarations.',
         'file': 'Delete empty Dart files with no used declarations.',
@@ -115,6 +116,7 @@ ArgParser _buildArgParser() {
         'var': 'Remove unused module/provider variables.',
         'method': 'Remove unused class methods/getters/setters.',
         'member': 'Remove unused class members (fields, methods, accessors).',
+        'import': 'Remove unused import directives.',
       },
     );
 

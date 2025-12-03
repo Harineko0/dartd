@@ -12,6 +12,7 @@ class RemovalTargets {
           RemovalKind.variable,
           RemovalKind.method,
           RemovalKind.member,
+          RemovalKind.import,
         };
 
   factory RemovalTargets.fromNames(List<String> names) {
@@ -34,6 +35,7 @@ class RemovalTargets {
     addIfPresent('var', RemovalKind.variable);
     addIfPresent('method', RemovalKind.method);
     addIfPresent('member', RemovalKind.member);
+    addIfPresent('import', RemovalKind.import);
 
     if (kinds.isEmpty) {
       return const RemovalTargets.all();
@@ -50,6 +52,7 @@ class RemovalTargets {
   bool get removeVariables => kinds.contains(RemovalKind.variable);
   bool get removeMethods => kinds.contains(RemovalKind.method);
   bool get removeMembers => kinds.contains(RemovalKind.member);
+  bool get removeImports => kinds.contains(RemovalKind.import);
 
   bool allowModule(ModuleDefinition module) {
     switch (module.kind) {
@@ -96,4 +99,5 @@ enum RemovalKind {
   variable,
   method,
   member,
+  import,
 }

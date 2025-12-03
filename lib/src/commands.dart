@@ -210,13 +210,15 @@ Future<void> runFixCommand(
       }
     }
 
-    cleanupUnusedImports(
-      analysis.allDartFiles,
-      onFileChange: (message) {
-        changeLogs.add(message);
-        hasAppliedFix = true;
-      },
-    );
+    if (removalTargets.removeImports) {
+      cleanupUnusedImports(
+        analysis.allDartFiles,
+        onFileChange: (message) {
+          changeLogs.add(message);
+          hasAppliedFix = true;
+        },
+      );
+    }
 
     iteration++;
   }

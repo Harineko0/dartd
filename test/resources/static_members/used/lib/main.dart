@@ -1,3 +1,5 @@
+import 'static_class.dart';
+
 class FeatureFlags {
   static const String apiEndpoint = 'https://example.com';
   static String label() => 'endpoint:' + apiEndpoint;
@@ -5,4 +7,5 @@ class FeatureFlags {
 
 void main() {
   FeatureFlags.label();
+  StaticClass.staticMethod();
 }

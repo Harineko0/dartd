@@ -146,6 +146,9 @@ void main() {
       final content = await _readFile(projectDir, 'lib/main.dart');
       expect(content, isNot(contains('unusedName')));
       expect(content, isNot(contains('unusedLabel')));
+
+      final staticClass = await _readFileIfExists(projectDir, 'lib/static_class.dart');
+      expect(staticClass, isNull);
     });
 
     test('removes unused named parameters and fields', () async {
@@ -402,6 +405,9 @@ void main() {
       expect(content, contains('FeatureFlags'));
       expect(content, contains('apiEndpoint'));
       expect(content, contains('label'));
+
+      final staticClass = await _readFileIfExists(projectDir, 'lib/static_class.dart');
+      expect(staticClass, isNotNull);
     });
 
     test('keeps named parameters that are used', () async {

@@ -147,7 +147,8 @@ void main() {
       expect(content, isNot(contains('unusedName')));
       expect(content, isNot(contains('unusedLabel')));
 
-      final staticClass = await _readFileIfExists(projectDir, 'lib/static_class.dart');
+      final staticClass =
+          await _readFileIfExists(projectDir, 'lib/static_class.dart');
       expect(staticClass, isNull);
     });
 
@@ -233,12 +234,29 @@ void main() {
       _expectSuccess(result);
 
       final provider = await _readFileIfExists(projectDir, 'lib/provider.dart');
-      final providerG = await _readFileIfExists(projectDir, 'lib/provider.g.dart');
+      final providerG =
+          await _readFileIfExists(projectDir, 'lib/provider.g.dart');
       final state = await _readFileIfExists(projectDir, 'lib/state.dart');
 
       expect(provider, isNotNull);
       expect(providerG, isNotNull);
       expect(state, isNotNull);
+    });
+
+    test('removes unused imports even when targets are missing', () async {
+      final projectDir = await _copyFixture('unused_imports', 'unused');
+      addTearDown(() => projectDir.delete(recursive: true));
+
+      final result = await _runFix(projectDir.path);
+      _expectSuccess(result);
+
+      final mainContent = await _readFile(projectDir, 'lib/main.dart');
+      expect(mainContent, isNot(contains('missing.dart')));
+      expect(mainContent, isNot(contains('unused_helper.dart')));
+
+      final helperFile =
+          File(p.join(projectDir.path, 'lib', 'unused_helper.dart'));
+      expect(helperFile.existsSync(), isFalse);
     });
 
     test('removes unused freezed classes', () async {
@@ -406,7 +424,8 @@ void main() {
       expect(content, contains('apiEndpoint'));
       expect(content, contains('label'));
 
-      final staticClass = await _readFileIfExists(projectDir, 'lib/static_class.dart');
+      final staticClass =
+          await _readFileIfExists(projectDir, 'lib/static_class.dart');
       expect(staticClass, isNotNull);
     });
 
@@ -466,7 +485,8 @@ void main() {
       _expectSuccess(result);
 
       final provider = await _readFileIfExists(projectDir, 'lib/provider.dart');
-      final providerG = await _readFileIfExists(projectDir, 'lib/provider.g.dart');
+      final providerG =
+          await _readFileIfExists(projectDir, 'lib/provider.g.dart');
       final state = await _readFileIfExists(projectDir, 'lib/state.dart');
 
       expect(provider, isNotNull);

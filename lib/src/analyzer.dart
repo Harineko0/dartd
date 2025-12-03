@@ -797,10 +797,14 @@ void applyCombinedFixes({
           ?.map((decl) => _TextRemoval(decl.start, decl.end)),
     ];
 
-    if (removals.isEmpty) continue;
+    final originalContent = file.readAsStringSync();
+    var content = originalContent;
+    if (removals.isNotEmpty) {
+      content = _applyTextRemovals(content, removals);
+    }
+    content = _removeUnusedImports(content, filePath);
 
-    var content = file.readAsStringSync();
-    content = _applyTextRemovals(content, removals);
+    if (content == originalContent) continue;
 
     final log = onFileChange ?? print;
 
@@ -816,6 +820,26 @@ void applyCombinedFixes({
       file.writeAsStringSync(content);
       log('Updated file ($updateLabel): $filePath');
     }
+  }
+}
+
+void cleanupUnusedImports(
+  Iterable<String> filePaths, {
+  void Function(String message)? onFileChange,
+}) {
+  for (final filePath in filePaths) {
+    if (isGeneratedFile(filePath)) continue;
+
+    final file = File(filePath);
+    if (!file.existsSync()) continue;
+
+    final originalContent = file.readAsStringSync();
+    final cleaned = _removeUnusedImports(originalContent, filePath);
+    if (cleaned == originalContent) continue;
+
+    file.writeAsStringSync(cleaned);
+    final log = onFileChange ?? print;
+    log('Updated file (imports): $filePath');
   }
 }
 
@@ -856,6 +880,112 @@ String _collapseWhitespaceAroundRemoval(String content, int pivot) {
   final indent = content.substring(indentStart, right);
 
   return content.replaceRange(regionStart, regionEnd, '\n\n$indent');
+}
+
+String _removeUnusedImports(String content, String sourceFilePath) {
+  final parseResult = parseString(
+    path: sourceFilePath,
+    content: content,
+    throwIfDiagnostics: false,
+  );
+
+  final unit = parseResult.unit;
+  final usedNames = <String>{};
+  unit.accept(UsedNamesVisitor(usedNames));
+
+  final removals = <_TextRemoval>[];
+
+  for (final directive in unit.directives.whereType<ImportDirective>()) {
+    final prefix = directive.prefix?.name;
+    final prefixUsed = prefix != null && usedNames.contains(prefix);
+    if (prefixUsed) continue;
+
+    final resolution = _namesFromImportUri(directive.uri, sourceFilePath);
+
+    final shownNames = directive.combinators
+        .whereType<ShowCombinator>()
+        .expand((c) => c.shownNames.map((id) => id.name))
+        .toSet();
+
+    final hiddenNames = directive.combinators
+        .whereType<HideCombinator>()
+        .expand((c) => c.hiddenNames.map((id) => id.name))
+        .toSet();
+
+    var candidateNames = shownNames;
+
+    if (candidateNames.isEmpty) {
+      final importedNames = resolution?.names ?? const <String>{};
+      if (hiddenNames.isEmpty) {
+        candidateNames = importedNames.toSet();
+      } else {
+        candidateNames =
+            importedNames.where((name) => !hiddenNames.contains(name)).toSet();
+      }
+    }
+
+    final usesCandidate = candidateNames.isEmpty
+        ? resolution == null || resolution.resolved
+        : candidateNames.any(usedNames.contains);
+
+    if (!usesCandidate) {
+      removals.add(_TextRemoval(directive.offset, directive.end));
+    }
+  }
+
+  if (removals.isEmpty) return content;
+  return _applyTextRemovals(content, removals);
+}
+
+_ImportResolution? _namesFromImportUri(
+  StringLiteral uriLiteral,
+  String sourceFilePath,
+) {
+  final uri = uriLiteral.stringValue;
+  if (uri == null) return null;
+  if (uri.startsWith('dart:') || uri.startsWith('package:')) {
+    return _ImportResolution(const {}, resolved: true);
+  }
+
+  final resolvedPath = p.normalize(p.join(p.dirname(sourceFilePath), uri));
+  final file = File(resolvedPath);
+  if (!file.existsSync()) {
+    return _ImportResolution(const {}, resolved: false);
+  }
+
+  final parseResult = parseString(
+    path: resolvedPath,
+    content: file.readAsStringSync(),
+    throwIfDiagnostics: false,
+  );
+
+  final names = <String>{};
+  for (final declaration in parseResult.unit.declarations) {
+    if (declaration is ClassDeclaration) {
+      names.add(declaration.name.lexeme);
+    } else if (declaration is EnumDeclaration) {
+      names.add(declaration.name.lexeme);
+    } else if (declaration is ExtensionDeclaration) {
+      final name = declaration.name?.lexeme;
+      if (name != null) names.add(name);
+    } else if (declaration is TopLevelVariableDeclaration) {
+      names.addAll(
+        declaration.variables.variables.map((v) => v.name.lexeme),
+      );
+    } else if (declaration is FunctionDeclaration) {
+      names.add(declaration.name.lexeme);
+    } else if (declaration is GenericTypeAlias) {
+      names.add(declaration.name.lexeme);
+    }
+  }
+  return _ImportResolution(names, resolved: true);
+}
+
+class _ImportResolution {
+  final Set<String> names;
+  final bool resolved;
+
+  _ImportResolution(this.names, {required this.resolved});
 }
 
 int? _previousNonWhitespace(String content, int start) {
